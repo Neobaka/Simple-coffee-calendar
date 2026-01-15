@@ -1,0 +1,411 @@
+<div class="schedule-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+          <rect width="40" height="40" fill="url(#pattern0_193_665)"/>
+          <defs>
+            <pattern id="pattern0_193_665" patternContentUnits="objectBoundingBox" width="1" height="1">
+            <use xlink:href="#image0_193_665" transform="translate(-0.0348837) scale(0.0116279)"/>
+            </pattern>
+            <image id="image0_193_665" width="92" height="86" preserveAspectRatio="none" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFwAAABWCAYAAABCdPE+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAQ6SURBVHhe7ZzdbxRVGId/eA3/FDf8FyZ6pf4Bpg0JQsKFHxUVokFQAqGLbWpjtx9QpRRlMVQLxbAkrU1T0022aW3ZmZ3ZnZmdr+NFKZr3QhI47/mYmefyOXdPdpPded85R4QQAhXKeIOKCl6q4IqpgiumCq6YKrhirAse/jFPlXREGiN6skC1FKwKnnXa8OojVEvHmx5But+iWgr2BM8zOKNDEGlMT6QyWLuP4LcfqJaGNcH9Hy8iaa9RLZXcfwZ37AOqpWJF8KTVRO+Xa1TLRQg4tWHkoUdPpGJ8cBH14dSGAeYnEL2fryH+6zHV0jE+uDt5Fpm7S7VUku0/4f90kWoWjA4ertxk+3l2iIhDONffB/KMHrFgbPDM3UW3/jHV0ulOfYSss001G2YGFzmc2jBE1KcnUomaiwgfzVHNipHBe4tXkLSaVEslc3fhTpyhmh3jgiftNfi3L1MtF5HDqQ1BDAJ6wo5RwUUcwhkdAkROj6TiL1xG0npKtRKMCu5NjyDrtKmWStJ6it6dK1Qrw5jg0WoDwfI01VIRgwBOjf8b9H8YETz399EdP021dNyJM+x/ol6G/uBCwLlxkv0ZRvBwBlFzkWrlaA/eb9QQb65QLZWssw2v/gnVWjiicy8l3dnA/vk3IbKEHmnn2Il3cfT421S/Nto+4SKNDwYKBsbmRFtwb/ZzpHtbVBceLcEH60sIHkxQXQqUB8/7DtyxU1SXBuXB3bFTyPsO1aVBafDgwfcYrC9RXSqUBU/3tuDNfkZ16VATXNFOiQ0oCe7Nf4l0Z4PqUsIePN5cQf/eKNWlhTV4Hnpwbpxk3ymxCdbg3fHTyP19qksNW/Dw4Syi1QbVpYcleNZpK9kpsRH5wUV+8BMwDulJBUdwf+Eb9rVim5EaPGk10bvzLdUV/0HqxCd8NIuUeU8v7/6NYLlOtXSOnXgPR4+/RfVrIzU4O0Lg2aV32GegKOKI7VXo3buuJDYn1gRPdzbgz39FtXVYEfxw4KxqaZ4TK4J7M+cKM3A2PvhgfQnB0iTV1mJ08CIOnI0OXsSBs7HB+7+OF3LgbGTwdG8L/twXVBcC44KLLCn0zqFxwf1bxR44GxU83lxBv1GjulAYE/zFwLngGBO8LANnI4IHy/XSDJy1B886bXjTn1JdWPQGP9w5LNHAWWtw//al0g2ctQVPWk307l6luvBoCf7vPVb6XsHWhZbg3akPtb+CrQvlwaMnCwgf819naipKg2fuLtzJs1SXCnXBn1/EyH2PlekoC967e5X9HisbUBL84B6rr6kuJezBX9xjVYCdEhmwB/dmzrHfY2UTrMGj1QaC36eoLjVswVXdY2UbbMFV3GNlIyzB+/e/s36tmAvpwdOdDfg3L1Bd8RypwYu+UyIDqcH9ufOFWSvmwq53fAqA1E94xcupgiumCq6YKrhiquCKqYIr5h/7OBGFuy7lhAAAAABJRU5ErkJggg=="/>
+          </defs>
+      </svg>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item" routerLink="/overview" title="Обзор">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="20" x2="12" y2="10"/>
+          <line x1="18" y1="20" x2="18" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="16"/>
+        </svg>
+      </button>
+      <button class="nav-item active" routerLink="/schedule" title="Расписание">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </button>
+      <button class="nav-item" routerLink="/coffee-shops" title="Кофейни">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      </button>
+      <button class="nav-item" routerLink="/employees" title="Сотрудники">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="nav-item" routerLink="/login" title="Выход">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Загрузка данных...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" class="error-banner">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      {{ errorMessage }}
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <h1>Расписание – Администратор</h1>
+        <p class="subtitle">Управление расписанием кофеен</p>
+      </div>
+    </header>
+
+    <!-- Filters -->
+    <div class="filters">
+      <div class="counter">Всего сотрудников – {{ employees.length }}</div>
+      
+      <div class="filter-group">
+        <button class="filter-btn" (click)="toggleFilter('coffee')">
+            <span class="filter-icon">📍</span>
+            {{ getSelectedCoffeeShopName() }}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </button>
+        
+        <div class="dropdown-menu" *ngIf="showCoffeeFilter">
+            <div class="filter-option" (click)="selectCoffeeShop('all')">
+            <span>Все кофейни</span>
+            <span class="check" *ngIf="selectedCoffeeShop === 'all'">✓</span>
+            </div>
+            <div class="filter-option" 
+                *ngFor="let shop of coffeeShops" 
+                (click)="selectCoffeeShop(shop.id)">
+            <span>{{ shop.name }}</span>
+            <span class="check" *ngIf="selectedCoffeeShop === shop.id">✓</span>
+            </div>
+        </div>
+    </div>
+
+      <div class="filter-group">
+        <button class="filter-btn" (click)="toggleFilter('type')">
+          Тип занятости
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu" *ngIf="showTypeFilter">
+          <button class="dropdown-item" (click)="$event.stopPropagation()">
+            <label class="checkbox-label">
+              <input type="checkbox" 
+                     [checked]="selectedTypes['work']" 
+                     (change)="toggleShiftType('work')"> Смена
+            </label>
+          </button>
+          <button class="dropdown-item" (click)="$event.stopPropagation()">
+            <label class="checkbox-label">
+              <input type="checkbox" 
+                     [checked]="selectedTypes['sick_leave']" 
+                     (change)="toggleShiftType('sick_leave')"> Больничный
+            </label>
+          </button>
+          <button class="dropdown-item" (click)="$event.stopPropagation()">
+            <label class="checkbox-label">
+              <input type="checkbox" 
+                     [checked]="selectedTypes['vacation']" 
+                     (change)="toggleShiftType('vacation')"> Отпуск
+            </label>
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <button class="filter-btn" (click)="toggleFilter('employee')">
+          Все сотрудники
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu" *ngIf="showEmployeeFilter">
+          <button class="dropdown-item" 
+                  *ngFor="let emp of employees" 
+                  (click)="$event.stopPropagation()">
+            <label class="checkbox-label">
+              <input type="checkbox" 
+                     [checked]="selectedEmployees[emp.id]" 
+                     (change)="toggleEmployee(emp.id)"> {{ emp.name }}
+            </label>
+          </button>
+        </div>
+      </div>
+
+      <button class="export-btn">
+        Экспорт
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Calendar Navigation -->
+    <div class="calendar-nav">
+      <button class="nav-btn" (click)="previousMonth()">‹</button>
+      <span class="date-range">{{ monthYearDisplay }}</span>
+      <button class="nav-btn" (click)="nextMonth()">›</button>
+    </div>
+
+    <!-- Week Days Header -->
+    <div class="schedule-header">
+      <div class="header-employee"></div>
+      <div class="header-day" *ngFor="let day of weekDays">
+        <div class="day-short">{{ day.dayName }}</div>
+        <div class="day-number">{{ day.dayNumber }}</div>
+      </div>
+    </div>
+
+    <!-- Schedule Grid -->
+    <div class="schedule-grid">
+      <div class="schedule-row" *ngFor="let employee of filteredEmployees">
+        <div class="employee-name-cell">{{ employee.name }}</div>
+        
+        <div class="shift-cell" 
+             *ngFor="let day of weekDays"
+             (click)="openShiftModal(employee, day)"
+             [class.has-shift]="getFilteredShift(employee.id, day.date)">
+          <div *ngIf="getFilteredShift(employee.id, day.date) as shift" 
+               class="shift-box"
+               [class.shift-sick]="shift.type === 'sick_leave'"
+               [class.shift-vacation]="shift.type === 'vacation'"
+               [class.shift-regular]="shift.type === 'work'"
+               (click)="$event.stopPropagation()">
+            <div class="shift-type">{{ getShiftLabel(shift.type) }}</div>
+            <div class="shift-time">{{ shift.startTime }} - {{ shift.endTime }}</div>
+            <div class="shift-hours">{{ calculateHours(shift.startTime, shift.endTime) }} часов</div>
+            <div class="shift-actions">
+              <button class="shift-edit" (click)="editShift(employee, day, shift)">✎</button>
+              <button class="shift-delete" (click)="deleteShift(shift)">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="tabs-navigation">
+      <button class="tab-btn" 
+              [class.active]="activeTab === 'requests'"
+              (click)="switchTab('requests')">
+        Запросы на согласование
+      </button>
+      <button class="tab-btn" 
+              [class.active]="activeTab === 'preferences'"
+              (click)="switchTab('preferences')">
+        Пожелания по графику
+      </button>
+    </div>
+
+    <!-- Tab Content Container -->
+    <div class="tab-content-container">
+      <!-- Shift Requests Tab -->
+      <div class="tab-content requests-tab" *ngIf="activeTab === 'requests'">
+        <h2 class="content-title">Активные запросы</h2>
+        
+        <div class="request-card" *ngFor="let request of shiftRequests">
+          <div class="request-header">
+            <span class="request-date">{{ request.date }}</span>
+            <span class="request-type">{{ request.requestType }}</span>
+          </div>
+          <div class="request-body">
+            <div class="request-info">
+              <strong>Замена с:</strong> {{ request.replacementName }}
+            </div>
+            <div class="request-comment" *ngIf="request.comment">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              {{ request.comment }}
+            </div>
+          </div>
+          <div class="request-actions">
+            <button class="btn-reject" (click)="rejectRequest(request)">Отклонить</button>
+            <button class="btn-approve" (click)="approveRequest(request)">Одобрить</button>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="shiftRequests.length === 0">
+          Нет активных запросов
+        </div>
+      </div>
+
+      <!-- Work Preferences Tab with Gantt Chart -->
+      <div class="tab-content preferences-tab" *ngIf="activeTab === 'preferences'">
+        <h2 class="content-title">Пожелания работников по составлению графика</h2>
+        <p class="content-subtitle">{{ ganttDateRange }}</p>
+
+        <!-- Info banner when no wishes -->
+        <div class="gantt-info-banner" *ngIf="ganttWishes.length === 0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>На следующую неделю нет пожеланий от сотрудников</span>
+        </div>
+
+        <!-- Gantt Chart -->
+        <div class="gantt-container" *ngIf="ganttWishes.length > 0">
+          <!-- Gantt Header with Time -->
+          <div class="gantt-header">
+            <div class="gantt-day-col">День</div>
+            <div class="gantt-timeline-header">
+              <div class="gantt-hour-label" *ngFor="let hour of timelineHours">
+                {{ hour }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Gantt Rows - ИСПОЛЬЗУЕМ nextWeekDays вместо weekDays -->
+          <div class="gantt-row" *ngFor="let day of nextWeekDays">
+            <div class="gantt-day-label">
+              <span class="gantt-day-name">{{ day.dayName }}</span>
+              <span class="gantt-day-number">{{ day.dayNumber }}</span>
+            </div>
+            <div class="gantt-timeline-container">
+              <!-- Background grid -->
+              <div class="gantt-timeline-grid">
+                <div class="gantt-hour-cell" *ngFor="let hour of timelineHours"></div>
+              </div>
+              
+              <!-- Wishes bars for this day -->
+              <div class="gantt-wishes-layer">
+                <div class="gantt-wish-bar" 
+                    *ngFor="let wish of getWishesForDay(day.dayName)"
+                    [style.left.%]="(wish.startHour - 8) * 100 / 15"
+                    [style.width.%]="wish.duration * 100 / 15"
+                    [style.top.px]="10"
+                    [class.selected]="wish.selected"
+                    [attr.title]="wish.employeeName + ': ' + wish.startTime + ' - ' + wish.endTime"
+                    (click)="toggleWishSelection(wish)">
+                  <span class="gantt-wish-name">{{ wish.employeeName }}</span>
+                  <span class="gantt-wish-time">{{ wish.startTime }} - {{ wish.endTime }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="gantt-actions" *ngIf="ganttWishes.length > 0">
+          <button class="btn-secondary" (click)="resetGantt()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            Сбросить выбор
+          </button>
+          <button class="btn-primary" (click)="addSelectedWishesToCalendar()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Добавить график в календарь
+          </button>
+        </div>
+
+        <!-- Selection Summary -->
+        <div class="selection-summary" *ngIf="hasSelectedWishes()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>Выбрано: {{ getSelectedWishesCount() }} пожеланий</span>
+        </div>
+</div>
+    </div>
+  </main>
+
+  <!-- Add/Edit Shift Modal -->
+  <div class="modal-overlay" *ngIf="showAddModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>{{ editingShift ? 'Изменить смену' : 'Добавить смену' }}</h3>
+      
+      <form>
+        <div class="form-group">
+          <label>Тип</label>
+          <div class="type-selector">
+            <button type="button" 
+                    class="type-option"
+                    [class.active]="newShift.type === 'work'"
+                    (click)="newShift.type = 'work'">
+              Смена
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+            <button type="button" 
+                    class="type-option"
+                    [class.active]="newShift.type === 'sick_leave'"
+                    (click)="newShift.type = 'sick_leave'">
+              Больничный
+            </button>
+            <button type="button" 
+                    class="type-option"
+                    [class.active]="newShift.type === 'vacation'"
+                    (click)="newShift.type = 'vacation'">
+              Отпуск
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="newShift.type === 'work'">
+          <div class="form-group">
+            <label>Начало</label>
+            <input type="time" class="form-control" [(ngModel)]="newShift.startTime" name="startTime">
+          </div>
+
+          <div class="form-group">
+            <label>Конец</label>
+            <input type="time" class="form-control" [(ngModel)]="newShift.endTime" name="endTime">
+          </div>
+        </div>
+
+        <div class="form-group" *ngIf="newShift.type !== 'work'">
+          <label>Комментарий (необязательно)</label>
+          <textarea class="form-control" 
+                    [(ngModel)]="newShift.comment" 
+                    name="comment" 
+                    placeholder="Введите комментарий..."
+                    rows="3"></textarea>
+        </div>
+      </form>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="closeModal()">Отменить</button>
+        <button class="btn-primary" (click)="saveShift()">
+          {{ editingShift ? 'Сохранить' : 'Добавить' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

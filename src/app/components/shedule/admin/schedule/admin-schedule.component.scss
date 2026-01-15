@@ -1,0 +1,1154 @@
+* {
+  box-sizing: border-box;
+}
+
+.schedule-container {
+  display: flex;
+  min-height: 100vh;
+  background: #FAFAFA;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Loading & Error States */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 100px;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  gap: 20px;
+
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #E5E5E5;
+    border-top-color: #FF8C42;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  p {
+    font-size: 16px;
+    color: #666;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #FFE5E5;
+  border: 1px solid #FFCCCC;
+  border-radius: 8px;
+  color: #C00;
+  margin-bottom: 20px;
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+/* Sidebar */
+.sidebar {
+  width: 100px;
+  background: white;
+  border-right: 1px solid #E5E5E5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  margin-bottom: 40px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.nav-item {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #999;
+  transition: all 0.3s;
+
+  &:hover {
+    background: #F5F5F5;
+    color: #FF8C42;
+  }
+
+  &.active {
+    background: #FF8C42;
+    color: white;
+  }
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+/* Main Content */
+.main-content {
+  margin-left: 100px;
+  flex: 1;
+  padding: 30px;
+  overflow-x: auto;
+}
+
+.header {
+  margin-bottom: 30px;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 5px 0;
+  color: #1a1a1a;
+}
+
+.subtitle {
+  color: #999;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+
+.counter {
+  font-size: 14px;
+  color: #666;
+  margin-right: 8px;
+}
+
+.filter-group {
+  position: relative;
+}
+
+.filter-btn {
+  padding: 10px 16px;
+  border: 1px solid #E5E5E5;
+  background: white;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: #FF8C42;
+    color: #FF8C42;
+  }
+}
+
+.export-btn {
+  padding: 10px 16px;
+  border: 1px solid #E5E5E5;
+  background: white;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+  margin-left: auto;
+
+  &:hover {
+    border-color: #FF8C42;
+    color: #FF8C42;
+  }
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  min-width: 200px;
+  z-index: 10;
+  margin-top: 5px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #F5F5F5;
+  }
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  width: 100%;
+
+  input {
+    cursor: pointer;
+  }
+}
+
+/* Calendar Navigation */
+.calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.nav-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #E5E5E5;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+
+  &:hover {
+    border-color: #FF8C42;
+    color: #FF8C42;
+  }
+}
+
+.date-range {
+  font-size: 14px;
+  color: #666;
+  min-width: 300px;
+  text-align: center;
+}
+
+/* Schedule Header */
+.schedule-header {
+  display: grid;
+  grid-template-columns: 180px repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 10px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.header-employee {
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.header-day {
+  text-align: center;
+  padding: 10px 5px;
+}
+
+.day-short {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Schedule Grid */
+.schedule-grid {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+
+.schedule-row {
+  display: grid;
+  grid-template-columns: 180px repeat(7, 1fr);
+  gap: 2px;
+  min-height: 100px;
+  border-bottom: 1px solid #F5F5F5;
+  padding: 2px;
+
+  &:hover {
+    background: #FAFAFA;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.employee-name-cell {
+  padding: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+}
+
+.shift-cell {
+  padding: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+
+  &:hover {
+    background: #F9F9F9;
+  }
+}
+
+.shift-box {
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  min-height: 80px;
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+}
+
+.shift-regular {
+  background: #FFE4D1;
+  color: #8B4513;
+}
+
+.shift-sick {
+  background: #B8D4E8;
+  color: #2C5F7F;
+}
+
+.shift-vacation {
+  background: #FFB8B8;
+  color: #8B2E2E;
+}
+
+.shift-type {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.shift-time {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.shift-hours {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.shift-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.shift-edit,
+.shift-delete {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: rgba(0,0,0,0.1);
+  color: inherit;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(0,0,0,0.2);
+  }
+}
+
+/* Tabs Navigation */
+.tabs-navigation {
+  display: flex;
+  gap: 0;
+  margin-top: 40px;
+  border-bottom: 2px solid #E5E5E5;
+  justify-content: space-evenly;
+}
+
+.tab-btn {
+  padding: 15px 30px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+  position: relative;
+  bottom: -2px;
+
+  &:hover {
+    color: #1a1a1a;
+  }
+
+  &.active {
+    color: #1a1a1a;
+    border-bottom-color: #1a1a1a;
+  }
+}
+
+/* Tab Content Container */
+.tab-content-container {
+  background: white;
+  border: 1px solid #E5E5E5;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.tab-content {
+  width: 100%;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.content-subtitle {
+  font-size: 14px;
+  color: #999;
+  margin: 0 0 20px 0;
+}
+
+/* Requests */
+.request-card {
+  background: #FAFAFA;
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.request-date {
+  font-size: 13px;
+  color: #666;
+}
+
+.request-type {
+  background: #FFE4D1;
+  color: #8B4513;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.request-body {
+  margin-bottom: 12px;
+}
+
+.request-info {
+  font-size: 14px;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.request-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-reject,
+.btn-approve {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.btn-reject {
+  background: white;
+  border: 1px solid #E5E5E5;
+  color: #666;
+
+  &:hover {
+    background: #F5F5F5;
+  }
+}
+
+.btn-approve {
+  background: #1a1a1a;
+  color: white;
+
+  &:hover {
+    background: #333;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Gantt Chart */
+.gantt-container {
+  background: white;
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+.gantt-header {
+  display: flex;
+  border-bottom: 2px solid #E5E5E5;
+  background: #FAFAFA;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.gantt-day-col {
+  width: 80px;
+  min-width: 80px;
+  border-right: 1px solid #E5E5E5;
+}
+
+.gantt-timeline-header {
+  display: flex;
+  flex: 1;
+  min-width: 900px;
+}
+
+.gantt-hour-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 5px;
+  font-size: 11px;
+  color: #999;
+  border-right: 1px solid #F5F5F5;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.gantt-row {
+  display: flex;
+  border-bottom: 1px solid #E5E5E5;
+  min-height: 80px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #FAFAFA;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.gantt-day-label {
+  width: 80px;
+  min-width: 80px;
+  padding: 15px;
+  border-right: 1px solid #E5E5E5;
+  font-weight: 500;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+
+.gantt-timeline-container {
+  flex: 1;
+  position: relative;
+  min-width: 900px;
+  padding: 10px 0;
+}
+
+.gantt-timeline-grid {
+  display: flex;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.gantt-hour-cell {
+  flex: 1;
+  border-right: 1px solid #F9F9F9;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.gantt-employee-shifts {
+  position: relative;
+  height: 100%;
+}
+
+.gantt-shift-bar {
+  position: absolute;
+  top: 10px;
+  height: 32px;
+  background: white;
+  border: 2px solid #E5E5E5;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  transition: all 0.2s;
+  cursor: pointer;
+  padding: 0 12px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #FF8C42;
+  }
+
+  &.selected {
+    background: #FFE4D1;
+    border: 2px solid #FF8C42;
+
+    .gantt-shift-name {
+      color: #FF8C42;
+    }
+  }
+}
+
+.gantt-shift-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gantt-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+
+  h3 {
+    margin: 0 0 25px 0;
+    font-size: 20px;
+    color: #1a1a1a;
+    font-weight: 600;
+  }
+}
+
+.form-group {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+  }
+}
+
+.type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.type-option {
+  padding: 12px 16px;
+  border: 1px solid #E5E5E5;
+  background: white;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &:hover {
+    border-color: #FF8C42;
+  }
+
+  &.active {
+    border-color: #FF8C42;
+    background: #FFF5F0;
+    color: #FF8C42;
+
+    svg {
+      opacity: 1;
+    }
+  }
+
+  svg {
+    opacity: 0;
+  }
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: #FF8C42;
+  }
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.btn-secondary,
+.btn-primary {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-secondary {
+  border: 1px solid #E5E5E5;
+  background: white;
+  color: #666;
+
+  &:hover {
+    background: #F5F5F5;
+  }
+}
+
+.btn-primary {
+  border: none;
+  background: #1a1a1a;
+  color: white;
+
+  &:hover {
+    background: #333;
+  }
+}
+
+// Gantt Chart Styles
+.gantt-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.gantt-header {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.gantt-day-col {
+  width: 100px;
+  padding: 12px;
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.gantt-timeline-header {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+
+.gantt-hour-label {
+  flex: 1;
+  padding: 12px 4px;
+  text-align: center;
+  font-size: 12px;
+  color: #6b7280;
+  border-left: 1px solid #e5e7eb;
+  
+  &:first-child {
+    border-left: none;
+  }
+}
+
+.gantt-row {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  min-height: 60px;
+  
+  &:hover {
+    background: #f9fafb;
+  }
+}
+
+.gantt-day-label {
+  width: 100px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+  border-right: 2px solid #e5e7eb;
+}
+
+.gantt-day-name {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.gantt-day-number {
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.gantt-timeline-container {
+  flex: 1;
+  position: relative;
+  min-height: 60px;
+}
+
+.gantt-timeline-grid {
+  display: flex;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none; // Важно: отключаем события на сетке
+}
+
+.gantt-hour-cell {
+  flex: 1;
+  border-left: 1px solid #f3f4f6;
+  
+  &:first-child {
+    border-left: none;
+  }
+}
+
+.gantt-wishes-layer {
+  position: relative;
+  height: 100%;
+  padding: 8px 0;
+  pointer-events: none; // Отключаем на контейнере
+}
+
+.gantt-wish-bar {
+  position: absolute;
+  height: 44px;
+  background: #FFE4D1;
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  pointer-events: auto; // ← ОЧЕНЬ ВАЖНО: включаем события на элементах
+  user-select: none;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+  }
+  
+  &.selected {
+    background: #FFE4D1;
+    border: 1px solid #000000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+    z-index: 20;
+  }
+  
+  &:active {
+    transform: translateY(-1px);
+  }
+}
+
+.gantt-wish-name {
+  color: #8B4513;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none; // Отключаем на тексте, чтобы клики проходили на родителя
+}
+
+.gantt-wish-time {
+  color: #8B4513;
+  font-size: 11px;
+  margin-top: 2px;
+  pointer-events: none; // Отключаем на тексте
+}
+
+// Action buttons
+.gantt-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border-top: 2px solid #e5e7eb;
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  background: white;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.btn-primary {
+  padding: 10px 20px;
+  background: #FFE4D1;
+  border: none;
+  border-radius: 6px;
+  color: rgb(0, 0, 0);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background: #FFE4D1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// Selection summary
+.selection-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  margin-top: 16px;
+  color: #1e40af;
+  font-weight: 500;
+  
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+// Info banner
+.gantt-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #6b7280;
+  margin-top: 20px;
+  
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .tabs-navigation {
+    overflow-x: auto;
+  }
+  
+  .tab-btn {
+    white-space: nowrap;
+  }
+
+  .gantt-container {
+    overflow-x: scroll;
+  }
+}
+
+@media (max-width: 1200px) {
+  .schedule-header,
+  .schedule-row {
+    grid-template-columns: 150px repeat(7, 1fr);
+  }
+
+}

@@ -135,124 +135,124 @@
       </main>
 
       <!-- Add/Edit Modal -->
-      <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
-        <div class="modal" (click)="$event.stopPropagation()">
-          <h3>{{ isEditMode ? 'Редактировать сотрудника' : 'Добавить сотрудника' }}</h3>
-          
-          <form>
-            <div class="form-group">
-              <label>{{ formStep === 1 ? 'Управляющий' : 'Бариста' }}</label>
-              <button 
-                type="button"
-                class="form-select" 
-                (click)="showRoleDropdown = !showRoleDropdown"
-              >
-                <span>{{ formData.role }}</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
-              <div class="dropdown-menu" *ngIf="showRoleDropdown">
-                <button 
-                  type="button"
-                  class="dropdown-item" 
-                  (click)="selectRole('Управляющий')"
-                >
-                  Управляющий
-                </button>
-                <button 
-                  type="button"
-                  class="dropdown-item" 
-                  (click)="selectRole('Бариста')"
-                >
-                  Бариста
-                </button>
-              </div>
-            </div>
-
-            <div class="form-group" *ngIf="formStep === 2">
-              <label>Имя и Фамилия</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                placeholder="Иван Иванов"
-                [(ngModel)]="formData.name"
-                name="name"
-              >
-            </div>
-
-            <div class="form-group" *ngIf="formStep === 3">
-              <label>Филиал</label>
-              <button 
-                type="button"
-                class="form-select" 
-                (click)="showShopDropdown = !showShopDropdown"
-              >
-                <span>{{ formData.coffeeShop }}</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
-              <div class="dropdown-menu" *ngIf="showShopDropdown">
-                <button 
-                  *ngFor="let shop of coffeeShops"
-                  type="button"
-                  class="dropdown-item" 
-                  (click)="selectShop(shop.name)"
-                >
-                  {{ shop.name }}
-                  <span class="dropdown-subtitle">{{ shop.address }}</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="form-group" *ngIf="formStep === 4">
-              <label>Ставка ₽ / ч</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                placeholder="350"
-                [(ngModel)]="formData.hourlyRate"
-                name="hourlyRate"
-              >
-            </div>
-
-            <div class="form-group" *ngIf="formStep === 5">
-              <label>Пароль {{ isEditMode ? '(оставьте пустым, чтобы не менять)' : '' }}</label>
-              <input 
-                type="password" 
-                class="form-control" 
-                placeholder="••••••••"
-                [(ngModel)]="formData.password"
-                name="password"
-              >
-            </div>
-
-            <div class="form-group" *ngIf="formStep === 6">
-              <label>Email</label>
-              <input 
-                type="email" 
-                class="form-control" 
-                placeholder="user@example.com"
-                [(ngModel)]="formData.login"
-                name="login"
-              >
-              <small style="color: #666; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
-                Используется для входа в систему
-              </small>
-            </div>
-          </form>
-
-          <div class="modal-actions">
-            <button class="btn-secondary" (click)="closeModal()">Отменить</button>
-            <button 
-            class="btn-primary" 
-            (click)="nextStep()"
-            [disabled]="!canProceed()"
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{ isEditMode ? 'Редактировать сотрудника' : 'Добавить сотрудника' }}</h3>
+    
+    <form>
+      <div class="form-group">
+        <label>Роль</label>
+        <button 
+          type="button"
+          class="form-select" 
+          (click)="showRoleDropdown = !showRoleDropdown"
+        >
+          <span>{{ formData.role }}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu" *ngIf="showRoleDropdown">
+          <button 
+            type="button"
+            class="dropdown-item" 
+            (click)="selectRole('Управляющий')"
           >
-            {{ isEditMode ? 'Сохранить' : 'Добавить' }}
+            Управляющий
           </button>
-          </div>
+          <button 
+            type="button"
+            class="dropdown-item" 
+            (click)="selectRole('Бариста')"
+          >
+            Бариста
+          </button>
         </div>
       </div>
+
+      <div class="form-group">
+        <label>Имя и Фамилия</label>
+        <input 
+          type="text" 
+          class="form-control" 
+          placeholder="Иван Иванов"
+          [(ngModel)]="formData.name"
+          name="name"
+        >
+      </div>
+
+      <div class="form-group">
+        <label>Филиал</label>
+        <button 
+          type="button"
+          class="form-select" 
+          (click)="showShopDropdown = !showShopDropdown"
+        >
+          <span>{{ formData.coffeeShop }}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu" *ngIf="showShopDropdown">
+          <button 
+            *ngFor="let shop of coffeeShops"
+            type="button"
+            class="dropdown-item" 
+            (click)="selectShop(shop.name)"
+          >
+            {{ shop.name }}
+            <span class="dropdown-subtitle">{{ shop.address }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Ставка ₽ / ч</label>
+        <input 
+          type="text" 
+          class="form-control" 
+          placeholder="350"
+          [(ngModel)]="formData.hourlyRate"
+          name="hourlyRate"
+        >
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input 
+          type="email" 
+          class="form-control" 
+          placeholder="user@example.com"
+          [(ngModel)]="formData.login"
+          name="login"
+        >
+        <small style="color: #666; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
+          Используется для входа в систему
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label>Пароль {{ isEditMode ? '(оставьте пустым, чтобы не менять)' : '' }}</label>
+        <input 
+          type="password" 
+          class="form-control" 
+          placeholder="••••••••"
+          [(ngModel)]="formData.password"
+          name="password"
+        >
+      </div>
+    </form>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeModal()">Отменить</button>
+      <button 
+        class="btn-primary" 
+        (click)="submitForm()"
+        [disabled]="!isFormValid()"
+      >
+        {{ isEditMode ? 'Сохранить' : 'Добавить' }}
+      </button>
+    </div>
+  </div>
+</div>
     </div>

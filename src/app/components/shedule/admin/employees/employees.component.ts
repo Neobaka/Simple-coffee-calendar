@@ -197,16 +197,21 @@ export class EmployeesComponent implements OnInit {
     console.log('Editing user:', user, 'Form data:', this.formData);
   }
 
-  closeModal(): void {
+    closeModal(): void {
     this.showModal = false;
-    this.userForm.reset();
     this.editingUserId = null;
     this.error = null;
-    this.formStep = 1;
     this.showRoleDropdown = false;
     this.showShopDropdown = false;
-  }
-
+    this.formData = {
+      role: 'Бариста',
+      name: '',
+      coffeeShop: 'Выберите кофейню',
+      hourlyRate: '',
+      password: '',
+      login: ''
+    };
+    } 
   onSubmit(): void {
     if (this.userForm.invalid) {
       this.markFormGroupTouched(this.userForm);
@@ -339,17 +344,20 @@ export class EmployeesComponent implements OnInit {
   }
 
   openAddModal(): void {
-    this.formStep = 1;
-    this.formData = {
-      role: 'Бариста',
-      name: '',
-      coffeeShop: 'Выберите кофейню',
-      hourlyRate: '',
-      password: '',
-      login: ''
-    };
-    this.showModal = true;
-  }
+  this.isEditMode = false;
+  this.editingUserId = null;
+  this.formData = {
+    role: 'Бариста',
+    name: '',
+    coffeeShop: 'Выберите кофейню',
+    hourlyRate: '',
+    password: '',
+    login: ''
+  };
+  this.showModal = true;
+  this.showRoleDropdown = false;
+  this.showShopDropdown = false;
+}
 
   selectCoffeeShop(shop: string): void {
     this.selectedCoffeeShop = shop;
@@ -384,29 +392,22 @@ export class EmployeesComponent implements OnInit {
     }
   }
 
-  canProceed(): boolean {
-    switch (this.formStep) {
-      case 1: return !!this.formData.role;
-      case 2: return !!this.formData.name && this.formData.name.length >= 2;
-      case 3: return this.formData.coffeeShop !== 'Выберите кофейню';
-      case 4: return !!this.formData.hourlyRate && parseFloat(this.formData.hourlyRate) > 0;
-      case 5: {
-        // При редактировании пароль необязателен
-        if (this.isEditMode) {
-          return !this.formData.password || this.formData.password.length >= 6;
-        }
-        return !!this.formData.password && this.formData.password.length >= 6;
-      }
-      case 6: {
-        // Проверка валидности email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return !!this.formData.login && emailRegex.test(this.formData.login);
-      }
-      default: return false;
-    }
+    isFormValid(): boolean {
+    // Базовая валидация
+    const hasName = !!this.formData.name && this.formData.name.length >= 2;
+    const hasShop = this.formData.coffeeShop !== 'Выберите кофейню';
+    const hasRate = !!this.formData.hourlyRate && parseFloat(this.formData.hourlyRate) > 0;
+    const hasEmail = !!this.formData.login && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.formData.login);
+    
+    // При редактировании пароль необязателен
+    const hasValidPassword = this.isEditMode 
+      ? (!this.formData.password || this.formData.password.length >= 6)
+      : (!!this.formData.password && this.formData.password.length >= 6);
+    
+    return hasName && hasShop && hasRate && hasEmail && hasValidPassword;
   }
 
-  private submitForm(): void {
+  submitForm(): void {
     console.log('submitForm called, formData:', this.formData, 'isEditMode:', this.isEditMode, 'editingUserId:', this.editingUserId);
     
     // Проверяем что coffeeShops это массив

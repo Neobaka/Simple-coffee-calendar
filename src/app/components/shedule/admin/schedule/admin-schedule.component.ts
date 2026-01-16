@@ -8,6 +8,7 @@ import { UserService, User as ApiUser } from '../../../../services/user.service'
 import { WishService, Wish as ApiWish } from '../../../../services/wish.service';
 import { AuthService } from '../../../../services/auth.service';
 import { forkJoin } from 'rxjs';
+import { StatsService } from '../../../../services/stats.service';
 
 // Интерфейсы для UI
 interface Shift {
@@ -89,6 +90,7 @@ export class AdminScheduleComponent implements OnInit {
   private userService = inject(UserService);
   private wishService = inject(WishService);
   private authService = inject(AuthService);
+  private statsService = inject(StatsService);
 
   // Состояние загрузки
   isLoading = false;
@@ -199,118 +201,121 @@ export class AdminScheduleComponent implements OnInit {
    * Загрузка начальных данных
    */
   loadInitialData() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  this.isLoading = true;
+  this.errorMessage = '';
 
-    const currentUser = this.authService.getCurrentUserValue();
-    console.log('Current user:', currentUser);
-    
-    if (!currentUser) {
-      this.errorMessage = 'Пользователь не авторизован';
-      this.isLoading = false;
-      return;
-    }
-
-    this.currentUserCoffeeShop = typeof currentUser.coffeeShop === 'string' 
-      ? currentUser.coffeeShop 
-      : (currentUser.coffeeShop as any)?._id || '';
-
-    console.log('Coffee shop ID:', this.currentUserCoffeeShop);
-
-    const userParams: any = { limit: 100 };
-    const shiftParams: any = { dateFrom: this.weekDays[0]?.date || this.formatDate(this.currentDate) };
-    const wishParams: any = { limit: 100 };
-    
-    if (this.currentUserCoffeeShop) {
-      userParams.coffeeShop = this.currentUserCoffeeShop;
-      shiftParams.coffeeShop = this.currentUserCoffeeShop;
-      wishParams.coffeeShop = this.currentUserCoffeeShop;
-    }
-
-    forkJoin({
-      users: this.userService.getUsers(userParams),
-      shifts: this.shiftService.getShifts(shiftParams),
-      wishes: this.wishService.getWishes(wishParams)
-    }).subscribe({
-      next: (data: any) => {
-        console.log('Loaded data:', data);
-        
-        let usersArray: any[] = [];
-        
-        if (Array.isArray(data.users)) {
-          usersArray = data.users;
-        } else if (data.users?.data && Array.isArray(data.users.data.users)) {
-          usersArray = data.users.data.users;
-        } else if (data.users && Array.isArray(data.users.users)) {
-          usersArray = data.users.users;
-        } else if (data.users && Array.isArray(data.users.data)) {
-          usersArray = data.users.data;
-        } else {
-          console.warn('Unexpected users structure:', data.users);
-        }
-        
-        console.log('Final users array:', usersArray);
-        
-        this.employees = usersArray
-          .filter((u: ApiUser) => u.role === 'barista' && u.isActive)
-          .map((u: ApiUser) => this.mapUserToEmployee(u));
-
-        console.log('Mapped employees:', this.employees);
-
-        this.employees.forEach(emp => {
-          this.selectedEmployees[emp.id] = true;
-        });
-
-        let shiftsArray: any[] = [];
-        
-        if (Array.isArray(data.shifts)) {
-          shiftsArray = data.shifts;
-        } else if (data.shifts?.data && Array.isArray(data.shifts.data.shifts)) {
-          shiftsArray = data.shifts.data.shifts;
-        } else if (data.shifts && Array.isArray(data.shifts.shifts)) {
-          shiftsArray = data.shifts.shifts;
-        } else if (data.shifts && Array.isArray(data.shifts.data)) {
-          shiftsArray = data.shifts.data;
-        } else {
-          console.warn('Unexpected shifts structure:', data.shifts);
-        }
-        
-        console.log('Final shifts array:', shiftsArray);
-        
-        this.shifts = shiftsArray.map((s: ApiShift) => this.mapApiShiftToShift(s, usersArray));
-
-        console.log('Mapped shifts:', this.shifts);
-
-        let wishesArray: any[] = [];
-        
-        if (Array.isArray(data.wishes)) {
-          wishesArray = data.wishes;
-        } else if (data.wishes?.data && Array.isArray(data.wishes.data.wishes)) {
-          wishesArray = data.wishes.data.wishes;
-        } else if (data.wishes && Array.isArray(data.wishes.wishes)) {
-          wishesArray = data.wishes.wishes;
-        } else if (data.wishes && Array.isArray(data.wishes.data)) {
-          wishesArray = data.wishes.data;
-        } else {
-          console.warn('Unexpected wishes structure:', data.wishes);
-        }
-        
-        console.log('Final wishes array:', wishesArray);
-        
-        this.wishes = wishesArray;
-        
-        // Преобразуем wishes в ganttWishes
-        this.buildGanttWishes();
-        
-        this.isLoading = false;
-      },
-      error: (error: any) => {
-        console.error('Ошибка загрузки данных:', error);
-        this.errorMessage = 'Не удалось загрузить данные. Попробуйте обновить страницу.';
-        this.isLoading = false;
-      }
-    });
+  const currentUser = this.authService.getCurrentUserValue();
+  console.log('Current user:', currentUser);
+  
+  if (!currentUser) {
+    this.errorMessage = 'Пользователь не авторизован';
+    this.isLoading = false;
+    return;
   }
+
+  this.currentUserCoffeeShop = typeof currentUser.coffeeShop === 'string' 
+    ? currentUser.coffeeShop 
+    : (currentUser.coffeeShop as any)?._id || '';
+
+  console.log('Coffee shop ID:', this.currentUserCoffeeShop);
+
+  // ИЗМЕНЕНИЕ: Загружаем ВСЕХ пользователей без фильтра по кофейне
+  const userParams: any = { limit: 100 };
+  
+  const shiftParams: any = { dateFrom: this.weekDays[0]?.date || this.formatDate(this.currentDate) };
+  const wishParams: any = { limit: 100 };
+  
+  // Фильтр по кофейне применяем только к сменам и wishes
+  if (this.currentUserCoffeeShop) {
+    shiftParams.coffeeShop = this.currentUserCoffeeShop;
+    wishParams.coffeeShop = this.currentUserCoffeeShop;
+  }
+
+  forkJoin({
+    users: this.userService.getUsers(userParams),
+    shifts: this.shiftService.getShifts(shiftParams),
+    wishes: this.wishService.getWishes(wishParams)
+  }).subscribe({
+    next: (data: any) => {
+      console.log('Loaded data:', data);
+      
+      let usersArray: any[] = [];
+      
+      if (Array.isArray(data.users)) {
+        usersArray = data.users;
+      } else if (data.users?.data && Array.isArray(data.users.data.users)) {
+        usersArray = data.users.data.users;
+      } else if (data.users && Array.isArray(data.users.users)) {
+        usersArray = data.users.users;
+      } else if (data.users && Array.isArray(data.users.data)) {
+        usersArray = data.users.data;
+      } else {
+        console.warn('Unexpected users structure:', data.users);
+      }
+      
+      console.log('Final users array:', usersArray);
+      
+      // Сохраняем ВСЕХ барист
+      this.employees = usersArray
+        .filter((u: ApiUser) => u.role === 'barista' && u.isActive)
+        .map((u: ApiUser) => this.mapUserToEmployee(u));
+
+      console.log('Mapped employees:', this.employees);
+
+      // Инициализируем фильтр для всех сотрудников
+      this.employees.forEach(emp => {
+        this.selectedEmployees[emp.id] = true;
+      });
+
+      // Остальной код без изменений...
+      let shiftsArray: any[] = [];
+      
+      if (Array.isArray(data.shifts)) {
+        shiftsArray = data.shifts;
+      } else if (data.shifts?.data && Array.isArray(data.shifts.data.shifts)) {
+        shiftsArray = data.shifts.data.shifts;
+      } else if (data.shifts && Array.isArray(data.shifts.shifts)) {
+        shiftsArray = data.shifts.shifts;
+      } else if (data.shifts && Array.isArray(data.shifts.data)) {
+        shiftsArray = data.shifts.data;
+      } else {
+        console.warn('Unexpected shifts structure:', data.shifts);
+      }
+      
+      console.log('Final shifts array:', shiftsArray);
+      
+      this.shifts = shiftsArray.map((s: ApiShift) => this.mapApiShiftToShift(s, usersArray));
+
+      console.log('Mapped shifts:', this.shifts);
+
+      let wishesArray: any[] = [];
+      
+      if (Array.isArray(data.wishes)) {
+        wishesArray = data.wishes;
+      } else if (data.wishes?.data && Array.isArray(data.wishes.data.wishes)) {
+        wishesArray = data.wishes.data.wishes;
+      } else if (data.wishes && Array.isArray(data.wishes.wishes)) {
+        wishesArray = data.wishes.wishes;
+      } else if (data.wishes && Array.isArray(data.wishes.data)) {
+        wishesArray = data.wishes.data;
+      } else {
+        console.warn('Unexpected wishes structure:', data.wishes);
+      }
+      
+      console.log('Final wishes array:', wishesArray);
+      
+      this.wishes = wishesArray;
+      this.buildGanttWishes();
+      
+      this.isLoading = false;
+    },
+    error: (error: any) => {
+      console.error('Ошибка загрузки данных:', error);
+      this.errorMessage = 'Не удалось загрузить данные. Попробуйте обновить страницу.';
+      this.isLoading = false;
+    }
+  });
+}
 
  /**
  * Построение Gantt Wishes из API Wishes
@@ -841,20 +846,25 @@ private getSelectedWishesSummary(): string {
   }
 
   selectCoffeeShop(shop: string) {
-    this.selectedCoffeeShop = shop;
-    this.showCoffeeFilter = false;
-    
-    if (shop === 'all') {
-      const currentUser = this.authService.getCurrentUserValue();
-      this.currentUserCoffeeShop = typeof currentUser?.coffeeShop === 'string' 
-        ? currentUser.coffeeShop 
-        : (currentUser?.coffeeShop as any)?._id || '';
-    } else {
-      this.currentUserCoffeeShop = shop;
-    }
-    
-    this.loadInitialData();
+  this.selectedCoffeeShop = shop;
+  this.showCoffeeFilter = false;
+  
+  if (shop === 'all') {
+    // Показываем всех барист
+    const currentUser = this.authService.getCurrentUserValue();
+    this.currentUserCoffeeShop = typeof currentUser?.coffeeShop === 'string' 
+      ? currentUser.coffeeShop 
+      : (currentUser?.coffeeShop as any)?._id || '';
+  } else {
+    // Устанавливаем выбранную кофейню
+    this.currentUserCoffeeShop = shop;
   }
+  
+  // Перезагружаем только смены и wishes для выбранной кофейни
+  this.loadShiftsForCurrentWeek();
+  this.loadWishesForCurrentWeek();
+}
+
 
   getSelectedCoffeeShopName(): string {
     if (this.selectedCoffeeShop === 'all') {
@@ -873,8 +883,20 @@ private getSelectedWishesSummary(): string {
   }
 
   get filteredEmployees(): Employee[] {
-    return this.employees.filter(emp => this.selectedEmployees[emp.id]);
-  }
+  return this.employees.filter(emp => {
+    // Проверяем выбран ли сотрудник в фильтре
+    if (!this.selectedEmployees[emp.id]) {
+      return false;
+    }
+    
+    // Если выбрана конкретная кофейня, показываем только её сотрудников
+    if (this.selectedCoffeeShop !== 'all' && emp.coffeeShop !== this.selectedCoffeeShop) {
+      return false;
+    }
+    
+    return true;
+  });
+}
 
   getFilteredShift(employeeId: string, date: string): Shift | undefined {
     const shift = this.shifts.find(s => s.employeeId === employeeId && s.date === date);
@@ -1078,5 +1100,63 @@ private getSelectedWishesSummary(): string {
     return this.ganttWishes.some(w => w.selected);
   }
 
-  
+  /**
+   * Экспорт статистики в Excel
+   */
+  exportSchedule() {
+    if (this.weekDays.length === 0) {
+      alert('Нет данных для экспорта');
+      return;
+    }
+
+    // Берем даты текущей недели
+    const dateFrom = this.weekDays[0].date;
+    const dateTo = this.weekDays[6].date;
+    
+    // Показываем индикатор загрузки
+    this.isLoading = true;
+    
+    // Определяем кофейню для экспорта
+    const coffeeShopId = this.selectedCoffeeShop === 'all' 
+      ? undefined 
+      : this.selectedCoffeeShop;
+
+    console.log('Exporting data:', { dateFrom, dateTo, coffeeShopId });
+
+    // Вызываем API для экспорта
+    this.statsService.exportDashboardSummary({
+      dateFrom,
+      dateTo,
+      coffeeShopId  // Исправлено: используем coffeeShopId вместо coffeeShop
+    }).subscribe({
+      next: (blob: Blob) => {
+        // Генерируем имя файла
+        const coffeeShopName = this.getSelectedCoffeeShopName().replace(/\s+/g, '_');
+        const filename = `schedule_${coffeeShopName}_${dateFrom}_${dateTo}.xlsx`;
+        
+        // Скачиваем файл
+        this.statsService.downloadFile(blob, filename);
+        
+        this.isLoading = false;
+        console.log('Export successful');
+      },
+      error: (error: any) => {
+        console.error('Ошибка экспорта:', error);
+        this.isLoading = false;
+        
+        let errorMessage = 'Не удалось экспортировать данные';
+        
+        if (error.status === 404) {
+          errorMessage = 'Эндпоинт экспорта не найден. Проверьте настройки API.';
+        } else if (error.status === 401) {
+          errorMessage = 'Требуется авторизация';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+        
+        alert(errorMessage);
+      }
+    });
+  }
 }
+

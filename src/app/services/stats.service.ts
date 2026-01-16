@@ -1,21 +1,20 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+
 export interface DashboardSummary {
+  totalShifts: number;
   totalHours: number;
   totalSalary: number;
   totalPenalties: number;
-  netSalary: number;
-  shiftsCount: number;
-  baristas: Array<{
+  baristaStats: Array<{
     userId: string;
     fullName: string;
-    hours: number;
-    salary: number;
-    penalties: number;
-    netSalary: number;
+    totalHours: number;
+    totalSalary: number;
+    shiftsCount: number;
   }>;
 }
 
@@ -150,5 +149,20 @@ export class StatsService {
     link.download = filename;
     link.click();
     window.URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Генерация имени файла для экспорта
+   */
+  generateExportFilename(type: 'dashboard' | 'user', dateFrom: string, dateTo: string, userName?: string): string {
+    const dateFromFormatted = dateFrom.replace(/-/g, '');
+    const dateToFormatted = dateTo.replace(/-/g, '');
+    
+    if (type === 'dashboard') {
+      return `dashboard_${dateFromFormatted}_${dateToFormatted}.xlsx`;
+    } else {
+      const userPart = userName ? `_${userName.replace(/\s+/g, '_')}` : '';
+      return `user_stats${userPart}_${dateFromFormatted}_${dateToFormatted}.xlsx`;
+    }
   }
 }

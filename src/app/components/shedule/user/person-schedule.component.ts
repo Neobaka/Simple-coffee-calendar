@@ -1,4 +1,4 @@
-// src/app/components/shedule/user/person-schedule.component.ts
+// src/app/components/schedule/user/person-schedule.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,6 +26,12 @@ interface TimePreference {
   date: string;
   startTime: string;
   endTime: string;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  isCurrentUser: boolean;
 }
 
 @Component({
@@ -59,6 +65,10 @@ export class PersonScheduleComponent implements OnInit {
   // Смены и пожелания
   myShifts: Shift[] = [];
   preferencesDays: TimePreference[] = [];
+  
+  // НОВОЕ: Данные команды
+  teamMembers: TeamMember[] = [];
+  teamShifts: Map<string, Shift[]> = new Map();
 
   ngOnInit() {
     console.log('=== PersonScheduleComponent initialized ===');
@@ -66,7 +76,7 @@ export class PersonScheduleComponent implements OnInit {
     
     this.loadUserData();
     this.updateWeekDays();
-    this.initializePreferences(); // ← Добавили инициализацию пожеланий
+    this.initializePreferences();
   }
 
   /**
@@ -83,7 +93,6 @@ export class PersonScheduleComponent implements OnInit {
 
     this.employeeName = this.currentUser.fullName;
     
-    // Извлекаем информацию о кофейне
     if (typeof this.currentUser.coffeeShop === 'string') {
       this.userCoffeeShopId = this.currentUser.coffeeShop;
       this.coffeeShopName = 'Simple Coffee';
@@ -95,6 +104,178 @@ export class PersonScheduleComponent implements OnInit {
     }
 
     console.log('Coffee shop:', this.coffeeShopName, this.userCoffeeShopId);
+    
+    // НОВОЕ: Загружаем команду
+    this.loadTeamMembers();
+  }
+
+  /**
+   * НОВОЕ: Загрузка команды через смены (у бариста нет доступа к /users)
+   */
+  loadTeamMembers() {
+    if (!this.userCoffeeShopId) {
+      console.log('Cannot load team: no coffee shop ID');
+      return;
+    }
+
+    console.log('=== Loading team members via shifts ===');
+    console.log('Coffee shop ID:', this.userCoffeeShopId);
+    
+    // Загружаем смены за текущий месяц чтобы получить список всех сотрудников
+    const startOfMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
+    const dateFrom = this.formatDate(startOfMonth);
+    
+    console.log('Loading shifts from:', dateFrom);
+    
+    this.shiftService.getShifts({
+      coffeeShop: this.userCoffeeShopId,
+      dateFrom: dateFrom
+    }).subscribe({
+      next: (response: any) => {
+        console.log('=== Shifts for team discovery ===');
+        
+        let shiftsArray: any[] = [];
+        
+        if (Array.isArray(response)) {
+          shiftsArray = response;
+        } else if (response?.data && Array.isArray(response.data.shifts)) {
+          shiftsArray = response.data.shifts;
+        } else if (Array.isArray(response?.shifts)) {
+          shiftsArray = response.shifts;
+        } else if (Array.isArray(response?.data)) {
+          shiftsArray = response.data;
+        }
+        
+        console.log('Total shifts found:', shiftsArray.length);
+        
+        // Извлекаем уникальных пользователей из смен
+        const userMap = new Map<string, TeamMember>();
+        const currentUserId = (this.currentUser as any)?._id || (this.currentUser as any)?.id;
+        
+        shiftsArray.forEach(shift => {
+          let userId: string;
+          let userName: string;
+          
+          if (typeof shift.user === 'string') {
+            userId = shift.user;
+            userName = userId === currentUserId ? this.employeeName : 'Сотрудник';
+          } else if (shift.user) {
+            userId = shift.user._id;
+            userName = shift.user.fullName || 'Сотрудник';
+          } else {
+            return;
+          }
+          
+          if (!userMap.has(userId)) {
+            userMap.set(userId, {
+              id: userId,
+              name: userName,
+              isCurrentUser: userId === currentUserId
+            });
+          }
+        });
+        
+        this.teamMembers = Array.from(userMap.values())
+          .sort((a, b) => {
+            if (a.isCurrentUser) return -1;
+            if (b.isCurrentUser) return 1;
+            return a.name.localeCompare(b.name);
+          });
+        
+        console.log('Team members extracted:', this.teamMembers);
+        
+        // Теперь загружаем смены для текущей недели
+        if (this.weekDays.length > 0) {
+          this.loadTeamShifts();
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading team members via shifts:', error);
+        
+        // Если не удалось загрузить, добавляем хотя бы текущего пользователя
+        const currentUserId = (this.currentUser as any)?._id || (this.currentUser as any)?.id;
+        this.teamMembers = [{
+          id: currentUserId,
+          name: this.employeeName,
+          isCurrentUser: true
+        }];
+      }
+    });
+  }
+
+  /**
+   * НОВОЕ: Загрузка смен всей команды
+   */
+  loadTeamShifts() {
+    if (this.teamMembers.length === 0 || this.weekDays.length === 0) {
+      console.log('Cannot load team shifts: no team or no weekDays');
+      return;
+    }
+
+    const weekStart = this.weekDays[0].date;
+    
+    console.log('=== Loading team shifts ===');
+    console.log('Week start:', weekStart);
+    console.log('Coffee shop:', this.userCoffeeShopId);
+    
+    this.shiftService.getShifts({
+      coffeeShop: this.userCoffeeShopId,
+      dateFrom: weekStart
+    }).subscribe({
+      next: (response: any) => {
+        console.log('=== Team shifts response ===');
+        console.log('Response:', response);
+        
+        let shiftsArray: any[] = [];
+        
+        if (Array.isArray(response)) {
+          shiftsArray = response;
+        } else if (response?.data && Array.isArray(response.data.shifts)) {
+          shiftsArray = response.data.shifts;
+        } else if (Array.isArray(response?.shifts)) {
+          shiftsArray = response.shifts;
+        } else if (Array.isArray(response?.data)) {
+          shiftsArray = response.data;
+        }
+        
+        console.log('Total shifts loaded:', shiftsArray.length);
+        
+        // Группируем смены по пользователям
+        this.teamShifts.clear();
+        
+        shiftsArray.forEach(shift => {
+          const userId = typeof shift.user === 'string' ? shift.user : shift.user?._id;
+          
+          if (!userId) {
+            console.warn('Shift without user ID:', shift);
+            return;
+          }
+          
+          if (!this.teamShifts.has(userId)) {
+            this.teamShifts.set(userId, []);
+          }
+          
+          this.teamShifts.get(userId)!.push(this.mapApiShiftToShift(shift));
+        });
+        
+        console.log('Team shifts grouped by user:');
+        this.teamShifts.forEach((shifts, userId) => {
+          const member = this.teamMembers.find(m => m.id === userId);
+          console.log(`${member?.name || userId}: ${shifts.length} shifts`);
+        });
+      },
+      error: (error: any) => {
+        console.error('Error loading team shifts:', error);
+      }
+    });
+  }
+
+  /**
+   * НОВОЕ: Получить смену члена команды на конкретную дату
+   */
+  getTeamMemberShift(userId: string, date: string): Shift | undefined {
+    const shifts = this.teamShifts.get(userId);
+    return shifts?.find(s => s.date === date);
   }
 
   /**
@@ -110,15 +291,10 @@ export class PersonScheduleComponent implements OnInit {
     
     const userId = (this.currentUser as any)._id || (this.currentUser as any).id;
     const weekStart = this.weekDays[0].date;
-    const weekEnd = this.weekDays[6].date;
     
-    console.log('=== Loading shifts ===');
+    console.log('=== Loading my shifts ===');
     console.log('User ID:', userId);
-    console.log('Week range:', weekStart, 'to', weekEnd);
-    console.log('Request params:', {
-      user: userId,
-      dateFrom: weekStart
-    });
+    console.log('Week start:', weekStart);
     
     this.shiftService.getShifts({
       user: userId,
@@ -128,7 +304,6 @@ export class PersonScheduleComponent implements OnInit {
         console.log('=== Shifts response received ===');
         console.log('Raw response:', response);
         
-        // Проверяем различные варианты структуры ответа
         let shiftsArray: ApiShift[] = [];
         
         if (Array.isArray(response)) {
@@ -139,42 +314,21 @@ export class PersonScheduleComponent implements OnInit {
           shiftsArray = response.shifts;
         } else if (Array.isArray(response?.data)) {
           shiftsArray = response.data;
-        } else {
-          console.warn('Unexpected response structure:', response);
         }
         
-        console.log('Extracted shifts array:', shiftsArray);
         console.log('Number of shifts:', shiftsArray.length);
         
-        // Маппим смены
-        this.myShifts = shiftsArray.map((shift: ApiShift) => {
-          const mapped = this.mapApiShiftToShift(shift);
-          console.log('Mapped shift:', {
-            original_date: shift.date,
-            mapped_date: mapped.date,
-            type: mapped.type,
-            time: `${mapped.startTime}-${mapped.endTime}`
-          });
-          return mapped;
-        });
+        this.myShifts = shiftsArray.map(shift => this.mapApiShiftToShift(shift));
         
-        console.log('=== Final mapped shifts ===');
+        console.log('=== Mapped shifts ===');
         this.myShifts.forEach(shift => {
-          console.log(`Date: ${shift.date}, Type: ${shift.type}, Time: ${shift.startTime}-${shift.endTime}`);
-        });
-        
-        // Проверяем все даты текущей недели
-        console.log('=== Checking shifts for current week ===');
-        this.weekDays.forEach(day => {
-          const shift = this.myShifts.find(s => s.date === day.date);
-          console.log(`${day.date} (${day.dayName}): ${shift ? shift.type : 'NO SHIFT'}`);
+          console.log(`${shift.date}: ${shift.type} (${shift.startTime}-${shift.endTime})`);
         });
         
         this.isLoading = false;
       },
       error: (error: any) => {
-        console.error('=== Error loading shifts ===');
-        console.error('Error:', error);
+        console.error('Error loading shifts:', error);
         this.errorMessage = 'Не удалось загрузить смены';
         this.isLoading = false;
       }
@@ -185,19 +339,15 @@ export class PersonScheduleComponent implements OnInit {
    * Маппинг API Shift -> UI Shift
    */
   private mapApiShiftToShift(shift: ApiShift): Shift {
-    // Безопасное преобразование даты
     let dateStr: string;
     try {
       const dateObj = new Date(shift.date);
       if (isNaN(dateObj.getTime())) {
-        console.warn('Invalid date for shift:', shift);
         dateStr = new Date().toISOString().split('T')[0];
       } else {
-        // Используем UTC дату для избежания проблем с таймзонами
         dateStr = dateObj.toISOString().split('T')[0];
       }
     } catch (error) {
-      console.error('Error parsing shift date:', error, shift);
       dateStr = new Date().toISOString().split('T')[0];
     }
     
@@ -236,96 +386,80 @@ export class PersonScheduleComponent implements OnInit {
     }
   }
 
- /**
- * Сохранение пожеланий
- */
-savePreferences() {
-  if (!this.currentUser) {
-    alert('Ошибка: пользователь не авторизован');
-    return;
-  }
+  /**
+   * Сохранение пожеланий
+   */
+  savePreferences() {
+    if (!this.currentUser) {
+      alert('Ошибка: пользователь не авторизован');
+      return;
+    }
 
-  const coffeeShopId = this.userCoffeeShopId;
-  
-  if (!coffeeShopId) {
-    alert('Ошибка: не указана кофейня');
-    return;
-  }
+    const coffeeShopId = this.userCoffeeShopId;
+    
+    if (!coffeeShopId) {
+      alert('Ошибка: не указана кофейня');
+      return;
+    }
 
-  // Предупреждаем пользователя
-  const confirmMessage = 'Сохранить пожелания на следующую неделю?\n\nЕсли пожелания уже существуют, они будут пропущены.';
-  
-  if (!confirm(confirmMessage)) {
-    return;
-  }
+    const confirmMessage = 'Сохранить пожелания на следующую неделю?\n\nЕсли пожелания уже существуют, они будут пропущены.';
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
 
-  this.isLoading = true;
-  let savedCount = 0;
-  let skippedCount = 0;
-  let errors: string[] = [];
-  const totalPreferences = this.preferencesDays.length;
+    this.isLoading = true;
+    let savedCount = 0;
+    let skippedCount = 0;
+    let errors: string[] = [];
+    const totalPreferences = this.preferencesDays.length;
 
-  this.preferencesDays.forEach(pref => {
-    const wishData: WishCreate = {
-      date: pref.date,
-      type: 'work',
-      startTime: pref.startTime,
-      endTime: pref.endTime,
-      coffeeShop: coffeeShopId
-    };
+    this.preferencesDays.forEach(pref => {
+      const wishData: WishCreate = {
+        date: pref.date,
+        type: 'work',
+        startTime: pref.startTime,
+        endTime: pref.endTime,
+        coffeeShop: coffeeShopId
+      };
 
-    console.log('=== Saving wish ===');
-    console.log('Wish data:', wishData);
-
-    this.wishService.createWish(wishData).subscribe({
-      next: (response) => {
-        console.log('✓ Wish saved successfully:', response);
-        savedCount++;
-        
-        if (savedCount + skippedCount === totalPreferences) {
-          this.isLoading = false;
+      this.wishService.createWish(wishData).subscribe({
+        next: () => {
+          savedCount++;
           
-          let message = `Успешно сохранено: ${savedCount}`;
-          if (skippedCount > 0) {
-            message += `\nПропущено (уже существуют): ${skippedCount}`;
+          if (savedCount + skippedCount + errors.length === totalPreferences) {
+            this.showSaveResult(savedCount, skippedCount, errors);
           }
-          if (errors.length > 0) {
-            message += `\n\nОшибки:\n${errors.join('\n')}`;
+        },
+        error: (error: any) => {
+          if (error.error?.message?.includes('E11000 duplicate key')) {
+            skippedCount++;
+          } else {
+            const errorMsg = error.error?.message || error.message || 'Неизвестная ошибка';
+            errors.push(`${pref.day}: ${errorMsg}`);
           }
           
-          alert(message);
+          if (savedCount + skippedCount + errors.length === totalPreferences) {
+            this.showSaveResult(savedCount, skippedCount, errors);
+          }
         }
-      },
-      error: (error: any) => {
-        console.error('✗ Ошибка сохранения пожелания');
-        console.error('Error:', error.error);
-        
-        // Проверяем, является ли это ошибкой дубликата
-        if (error.error?.message?.includes('E11000 duplicate key')) {
-          console.log('⚠️ Пожелание уже существует, пропускаем');
-          skippedCount++;
-        } else {
-          const errorMsg = error.error?.message || error.message || 'Неизвестная ошибка';
-          errors.push(`${pref.day}: ${errorMsg}`);
-        }
-        
-        if (savedCount + skippedCount + errors.length === totalPreferences) {
-          this.isLoading = false;
-          
-          let message = `Успешно сохранено: ${savedCount}`;
-          if (skippedCount > 0) {
-            message += `\nПропущено (уже существуют): ${skippedCount}`;
-          }
-          if (errors.length > 0) {
-            message += `\n\nОшибки:\n${errors.join('\n')}`;
-          }
-          
-          alert(message);
-        }
-      }
+      });
     });
-  });
-}
+  }
+
+  private showSaveResult(savedCount: number, skippedCount: number, errors: string[]) {
+    this.isLoading = false;
+    
+    let message = `Успешно сохранено: ${savedCount}`;
+    if (skippedCount > 0) {
+      message += `\nПропущено (уже существуют): ${skippedCount}`;
+    }
+    if (errors.length > 0) {
+      message += `\n\nОшибки:\n${errors.join('\n')}`;
+    }
+    
+    alert(message);
+  }
 
   /**
    * Сброс пожеланий
@@ -340,22 +474,13 @@ savePreferences() {
    * Обновление недели
    */
   updateWeekDays() {
-    console.log('=== updateWeekDays called ===');
-    console.log('Current date:', this.currentDate.toISOString().split('T')[0]);
-    
     this.weekDays = [];
     
-    // Находим понедельник ТЕКУЩЕЙ недели
     const startDate = new Date(this.currentDate);
     const dayOfWeek = startDate.getDay();
-    
-    // Корректируем для начала недели (понедельник)
     const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     startDate.setDate(startDate.getDate() + diff);
 
-    console.log('Week start (Monday):', startDate.toISOString().split('T')[0]);
-
-    // Создаем 7 дней начиная с понедельника
     for (let i = 0; i < 7; i++) {
       const date = new Date(startDate);
       date.setDate(date.getDate() + i);
@@ -369,19 +494,15 @@ savePreferences() {
       });
     }
 
-    console.log('=== Week days generated ===');
-    this.weekDays.forEach((day, index) => {
-      console.log(`${index}: ${day.dayName} ${day.dayNumber} (${day.date})`);
-    });
-
     this.updateWeekDisplay();
     
-    // Перезагружаем смены если пользователь уже загружен
     if (this.currentUser) {
-      console.log('User is loaded, fetching shifts...');
       this.loadMyShifts();
-    } else {
-      console.log('User not loaded yet, skipping shift fetch');
+      
+      // НОВОЕ: Загружаем смены команды если уже есть список команды
+      if (this.teamMembers.length > 0) {
+        this.loadTeamShifts();
+      }
     }
   }
 
@@ -395,32 +516,15 @@ savePreferences() {
     const endStr = endDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     
     this.weekRangeDisplay = `${startStr} - ${endStr} г.`;
-    console.log('Week range display:', this.weekRangeDisplay);
   }
 
-  /**
-   * Переход на предыдущую неделю
-   */
   previousWeek() {
-    console.log('=== previousWeek called ===');
-    console.log('Before:', this.currentDate.toISOString().split('T')[0]);
-    
     this.currentDate.setDate(this.currentDate.getDate() - 7);
-    
-    console.log('After:', this.currentDate.toISOString().split('T')[0]);
     this.updateWeekDays();
   }
 
-  /**
-   * Переход на следующую неделю
-   */
   nextWeek() {
-    console.log('=== nextWeek called ===');
-    console.log('Before:', this.currentDate.toISOString().split('T')[0]);
-    
     this.currentDate.setDate(this.currentDate.getDate() + 7);
-    
-    console.log('After:', this.currentDate.toISOString().split('T')[0]);
     this.updateWeekDays();
   }
 
@@ -432,13 +536,7 @@ savePreferences() {
   }
 
   getMyShift(date: string): Shift | undefined {
-    const shift = this.myShifts.find(s => s.date === date);
-    if (shift) {
-      console.log(`Found shift for ${date}:`, shift);
-    } else {
-      console.log(`No shift found for ${date}`);
-    }
-    return shift;
+    return this.myShifts.find(s => s.date === date);
   }
 
   getShiftLabel(type: string): string {
@@ -457,76 +555,39 @@ savePreferences() {
     return endHour - startHour;
   }
 
-  /**
-   * Управление временем в пожеланиях
-   */
+  // Методы управления временем в пожеланиях
   incrementStartTime(index: number) {
-    const currentTime = this.preferencesDays[index].startTime;
-    const [hours, minutes] = currentTime.split(':').map(Number);
-    
-    let newHours = hours;
-    let newMinutes = minutes + 30;
-    
-    if (newMinutes >= 60) {
-      newMinutes = 0;
-      newHours = (newHours + 1) % 24;
-    }
-    
-    this.preferencesDays[index].startTime = 
-      `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+    const time = this.preferencesDays[index].startTime.split(':').map(Number);
+    let [h, m] = time;
+    m += 30;
+    if (m >= 60) { m = 0; h = (h + 1) % 24; }
+    this.preferencesDays[index].startTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
   decrementStartTime(index: number) {
-    const currentTime = this.preferencesDays[index].startTime;
-    const [hours, minutes] = currentTime.split(':').map(Number);
-    
-    let newHours = hours;
-    let newMinutes = minutes - 30;
-    
-    if (newMinutes < 0) {
-      newMinutes = 30;
-      newHours = (newHours - 1 + 24) % 24;
-    }
-    
-    this.preferencesDays[index].startTime = 
-      `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+    const time = this.preferencesDays[index].startTime.split(':').map(Number);
+    let [h, m] = time;
+    m -= 30;
+    if (m < 0) { m = 30; h = (h - 1 + 24) % 24; }
+    this.preferencesDays[index].startTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
   incrementEndTime(index: number) {
-    const currentTime = this.preferencesDays[index].endTime;
-    const [hours, minutes] = currentTime.split(':').map(Number);
-    
-    let newHours = hours;
-    let newMinutes = minutes + 30;
-    
-    if (newMinutes >= 60) {
-      newMinutes = 0;
-      newHours = (newHours + 1) % 24;
-    }
-    
-    this.preferencesDays[index].endTime = 
-      `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+    const time = this.preferencesDays[index].endTime.split(':').map(Number);
+    let [h, m] = time;
+    m += 30;
+    if (m >= 60) { m = 0; h = (h + 1) % 24; }
+    this.preferencesDays[index].endTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
   decrementEndTime(index: number) {
-    const currentTime = this.preferencesDays[index].endTime;
-    const [hours, minutes] = currentTime.split(':').map(Number);
-    
-    let newHours = hours;
-    let newMinutes = minutes - 30;
-    
-    if (newMinutes < 0) {
-      newMinutes = 30;
-      newHours = (newHours - 1 + 24) % 24;
-    }
-    
-    this.preferencesDays[index].endTime = 
-      `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+    const time = this.preferencesDays[index].endTime.split(':').map(Number);
+    let [h, m] = time;
+    m -= 30;
+    if (m < 0) { m = 30; h = (h - 1 + 24) % 24; }
+    this.preferencesDays[index].endTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
-  /**
-   * Экспорт расписания
-   */
   exportSchedule() {
     alert('Функция экспорта в разработке');
   }

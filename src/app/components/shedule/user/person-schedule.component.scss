@@ -458,6 +458,240 @@ h1 {
   color: #999;
 }
 
+
+// Расписание команды
+.schedule-header {
+  display: grid;
+  grid-template-columns: 200px repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0 16px;
+  
+  .header-employee {
+    font-weight: 600;
+    font-size: 14px;
+    color: #6B7280;
+    padding: 12px;
+  }
+  
+  .header-day {
+    text-align: center;
+    padding: 12px;
+    background: #F9FAFB;
+    border-radius: 8px;
+    
+    .day-short {
+      font-size: 12px;
+      color: #6B7280;
+      font-weight: 500;
+    }
+    
+    .day-number {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+      margin-top: 4px;
+    }
+  }
+}
+
+.schedule-grid {
+  padding: 0 16px;
+  
+  .schedule-row {
+    display: grid;
+    grid-template-columns: 200px repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+    
+    .employee-name-cell {
+      padding: 16px 12px;
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      &.current-user {
+        background: #FEF3C7;
+        border-color: #FCD34D;
+        font-weight: 600;
+      }
+      
+      .badge-you {
+        background: #F59E0B;
+        color: white;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+      }
+    }
+    
+    .shift-cell {
+      background: #F9FAFB;
+      border: 1px dashed #E5E7EB;
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 80px;
+      cursor: default;
+      transition: all 0.2s;
+      
+      &.has-shift {
+        background: #FFFFFF;
+        border: 1px solid #E5E7EB;
+      }
+      
+      .shift-box {
+        height: 100%;
+        padding: 8px;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        
+        &.shift-regular {
+          background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+          border: 1px solid #93C5FD;
+          
+          .shift-type {
+            color: #1E40AF;
+          }
+          
+          .shift-time,
+          .shift-hours {
+            color: #1E3A8A;
+          }
+        }
+        
+        &.shift-sick {
+          background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+          border: 1px solid #FCA5A5;
+          
+          .shift-type {
+            color: #991B1B;
+          }
+        }
+        
+        &.shift-vacation {
+          background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+          border: 1px solid #6EE7B7;
+          
+          .shift-type {
+            color: #065F46;
+          }
+        }
+        
+        &.shift-day-off {
+          background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+          border: 1px solid #D1D5DB;
+          
+          .shift-type {
+            color: #374151;
+          }
+        }
+        
+        .shift-type {
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 4px;
+        }
+        
+        .shift-time {
+          font-size: 13px;
+          font-weight: 500;
+        }
+        
+        .shift-hours {
+          font-size: 11px;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: #6B7280;
+  
+  svg {
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  p {
+    font-size: 16px;
+    margin: 0;
+  }
+}
+
+// Адаптация под маленькие экраны
+@media (max-width: 1400px) {
+  .schedule-header,
+  .schedule-grid .schedule-row {
+    grid-template-columns: 150px repeat(7, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .schedule-header,
+  .schedule-grid .schedule-row {
+    grid-template-columns: 120px repeat(7, 1fr);
+    gap: 6px;
+  }
+  
+  .schedule-header {
+    .header-day {
+      padding: 8px 4px;
+      
+      .day-short {
+        font-size: 11px;
+      }
+      
+      .day-number {
+        font-size: 16px;
+      }
+    }
+  }
+  
+  .schedule-grid .schedule-row {
+    .employee-name-cell {
+      padding: 12px 8px;
+      font-size: 13px;
+    }
+    
+    .shift-cell {
+      padding: 6px;
+      min-height: 70px;
+      
+      .shift-box {
+        padding: 6px;
+        
+        .shift-type {
+          font-size: 11px;
+        }
+        
+        .shift-time {
+          font-size: 12px;
+        }
+        
+        .shift-hours {
+          font-size: 10px;
+        }
+      }
+    }
+  }
+}
+
 @media (max-width: 1200px) {
   .my-schedule-grid {
     grid-template-columns: repeat(4, 1fr);

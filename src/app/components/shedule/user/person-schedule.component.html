@@ -88,16 +88,7 @@
     <!-- My Schedule View -->
     <div *ngIf="currentView === 'my'">
       <!-- Export Button -->
-      <div class="actions-bar">
-        <button class="export-btn" (click)="exportSchedule()">
-          Экспорт
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-        </button>
-      </div>
+      
 
       <!-- Calendar Navigation -->
       <div class="calendar-nav">
@@ -174,10 +165,62 @@
     </div>
 
     <!-- All Team View -->
-    <div *ngIf="currentView === 'all'">
-      <div class="team-view-placeholder">
-        <p>Здесь будет расписание всей команды</p>
+      <div *ngIf="currentView === 'all'">
+        <!-- Calendar Navigation для команды -->
+        <div class="calendar-nav">
+          <button class="nav-btn" (click)="previousWeek()">‹</button>
+          <span class="date-range">{{ weekRangeDisplay }}</span>
+          <button class="nav-btn" (click)="nextWeek()">›</button>
+        </div>
+
+        <!-- Week Days Header -->
+        <div class="schedule-header">
+          <div class="header-employee">Сотрудник</div>
+          <div class="header-day" *ngFor="let day of weekDays">
+            <div class="day-short">{{ day.dayName }}</div>
+            <div class="day-number">{{ day.dayNumber }}</div>
+          </div>
+        </div>
+
+        <!-- Team Schedule Grid -->
+        <div class="schedule-grid">
+          <div class="schedule-row" *ngFor="let member of teamMembers">
+            <div class="employee-name-cell" [class.current-user]="member.isCurrentUser">
+              {{ member.name }}
+              <span *ngIf="member.isCurrentUser" class="badge-you">Вы</span>
+            </div>
+            
+            <div class="shift-cell" 
+                *ngFor="let day of weekDays"
+                [class.has-shift]="getTeamMemberShift(member.id, day.date)">
+              <div *ngIf="getTeamMemberShift(member.id, day.date) as shift" 
+                  class="shift-box"
+                  [class.shift-sick]="shift.type === 'sick_leave'"
+                  [class.shift-vacation]="shift.type === 'vacation'"
+                  [class.shift-regular]="shift.type === 'work'"
+                  [class.shift-day-off]="shift.type === 'day_off'">
+                <div class="shift-type">{{ shift.status }}</div>
+                <div class="shift-time" *ngIf="shift.type === 'work'">
+                  {{ shift.startTime }} - {{ shift.endTime }}
+                </div>
+                <div class="shift-hours" *ngIf="shift.type === 'work'">
+                  {{ calculateHours(shift.startTime, shift.endTime) }} ч
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="teamMembers.length === 0" class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <p>Нет данных о команде</p>
+        </div>
       </div>
-    </div>
   </main>
 </div>

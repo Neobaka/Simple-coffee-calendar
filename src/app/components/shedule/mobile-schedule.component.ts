@@ -1,168 +1,237 @@
-// src/app/components/mobile-schedule/mobile-schedule.component.ts
-import { Component, OnInit } from '@angular/core';
+// src/app/components/shedule/mobile-schedule.component.ts
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService, User } from '../../services/auth.service';
+import { ShiftService, Shift as ApiShift } from '../../services/shift.service';
+import { WishService, WishCreate } from '../../services/wish.service';
+import { TuiButton, TuiIcon } from '@taiga-ui/core';
 
-interface Day {
+interface WeekDay {
   date: string;
+  shortLabel: string;
   dayNumber: number;
-  dayName: string;
-  isCurrentMonth: boolean;
   isSelected: boolean;
+  hasShift: boolean;
+  shiftType: 'work' | 'sick_leave' | 'vacation' | 'day_off' | 'none';
 }
 
-interface Shift {
-  id: string;
+interface Coworker {
+  name: string;
+  time: string;
+}
+
+interface DayShift {
+  date: string;
+  type: 'work' | 'sick_leave' | 'vacation' | 'day_off';
+  startTime?: string;
+  endTime?: string;
+  coworkers?: Coworker[];
+}
+
+interface TimePreference {
+  day: string;
   date: string;
   startTime: string;
   endTime: string;
-  type: 'sick' | 'regular' | 'vacation';
-  status: string;
-}
-
-interface TimeSlot {
-  label: string;
-  timeRange: string;
-  isSelected: boolean;
 }
 
 @Component({
   selector: 'app-mobile-schedule',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TuiButton, TuiIcon],
   template: `
-    <div class="mobile-schedule">
-      <!-- Header -->
-      <header class="header">
-        <h1>Привет, Мария! 👋</h1>
-      </header>
+    <div class="mobile-shell">
+      <!-- Top bar -->
+      <header class="top-bar">
+        <button tuiButton size="s" appearance="flat" class="icon-button icon-button_taiga" (click)="toggleProfileCard()">
+          <tui-icon icon="@tui.user" />
+        </button>
 
-      <!-- Calendar -->
-      <div class="calendar-section">
-        <div class="calendar-header">
-          <button class="nav-btn" (click)="previousMonth()">‹</button>
-          <span class="month-title">{{ monthYearDisplay }}</span>
-          <button class="nav-btn" (click)="nextMonth()">›</button>
+        <div class="logo-wordmark">
+          <span class="logo-text-main">simple coffee</span>
+          <span class="logo-accent">1</span>
         </div>
 
-        <div class="weekdays">
-          <div class="weekday-label" *ngFor="let day of ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']">
-            {{ day }}
+        <button tuiButton size="s" appearance="flat" class="icon-button icon-button_taiga" (click)="toggleNotifications()">
+          <tui-icon icon="@tui.bell" />
+        </button>
+
+        <!-- Плашка профиля -->
+        <div class="profile-card" *ngIf="showProfile">
+          <div class="profile-card-header">
+            <div class="profile-avatar">
+              <span>{{ initials }}</span>
+            </div>
+            <div class="profile-text">
+              <div class="profile-name">{{ employeeName }}</div>
+              <div class="profile-role">Должность: {{ employeeRoleLabel }}</div>
+            </div>
           </div>
-        </div>
-
-        <div class="calendar-grid">
-          <button 
-            *ngFor="let day of calendarDays" 
-            class="day-cell"
-            [class.other-month]="!day.isCurrentMonth"
-            [class.selected]="day.isSelected"
-            [class.has-shift]="hasShift(day.date)"
-            [class.sick-day]="getShiftType(day.date) === 'sick'"
-            [class.vacation-day]="getShiftType(day.date) === 'vacation'"
-            (click)="selectDay(day)">
-            {{ day.dayNumber }}
+          <div class="profile-meta">
+            <div class="meta-row">
+              <span class="meta-label">Филиал</span>
+              <span class="meta-value">{{ coffeeShopLabel }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Статус аккаунта</span>
+              <span class="meta-status">Активный</span>
+            </div>
+          </div>
+          <button tuiButton size="s" appearance="secondary" class="logout-btn" (click)="logout()">
+            Выйти
           </button>
         </div>
-      </div>
 
-      <!-- Shifts List -->
-      <div class="shifts-section">
-        <div class="shift-item" *ngFor="let shift of shifts">
-          <div class="shift-date">{{ formatShiftDate(shift.date) }}</div>
-          <div class="shift-details">
-            <span class="shift-time" *ngIf="shift.type === 'regular'">
-              {{ shift.startTime }} – {{ shift.endTime }}
-            </span>
-            <span class="shift-type"
-                  [class.type-sick]="shift.type === 'sick'"
-                  [class.type-vacation]="shift.type === 'vacation'">
-              {{ shift.status }}
-            </span>
+        <!-- Плашка уведомлений -->
+        <div class="notifications-card" *ngIf="showNotifications">
+          <div class="notif-title">Новые уведомления</div>
+          <div class="notif-body">
+            Нет активных уведомлений
           </div>
         </div>
-      </div>
+      </header>
 
-      <!-- Availability Section -->
-      <div class="availability-section">
-        <h2 class="section-title">Укажите желаемые часы работы</h2>
-        <p class="section-subtitle">Укажите, когда именно Вы можете работать</p>
+      <!-- Main content -->
+      <main class="content">
+        <!-- Section 1: week schedule -->
+        <section class="section">
+          <div class="section-title-row">
+            <span class="section-index">1</span>
+            <h2>Расписание смен на предстоящую неделю</h2>
+          </div>
 
-        <div class="date-slots" *ngFor="let date of upcomingDates">
-          <div class="date-header">{{ date.label }}</div>
-          
-          <div class="time-slots">
-            <button 
-              *ngFor="let slot of date.timeSlots"
-              class="time-slot"
-              [class.selected]="slot.isSelected"
-              (click)="toggleTimeSlot(date, slot)">
-              <div class="slot-icon">
-                <svg *ngIf="slot.label === 'Утро'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="5"/>
-                  <line x1="12" y1="1" x2="12" y2="3"/>
-                  <line x1="12" y1="21" x2="12" y2="23"/>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                  <line x1="1" y1="12" x2="3" y2="12"/>
-                  <line x1="21" y1="12" x2="23" y2="12"/>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-                <svg *ngIf="slot.label === 'День'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="5"/>
-                  <line x1="12" y1="1" x2="12" y2="3"/>
-                  <line x1="12" y1="21" x2="12" y2="23"/>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                  <line x1="1" y1="12" x2="3" y2="12"/>
-                  <line x1="21" y1="12" x2="23" y2="12"/>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-                <svg *ngIf="slot.label === 'Вечер'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
+          <div class="week-card">
+            <div class="week-header">
+            <button tuiButton size="s" appearance="flat" class="arrow-btn" (click)="previousWeek()">
+              <tui-icon icon="@tui.chevron-left" />
+            </button>
+              <div class="week-range">{{ weekRangeLabel }} г.</div>
+              <button tuiButton size="s" appearance="flat" class="arrow-btn" (click)="nextWeek()">
+                <tui-icon icon="@tui.chevron-right" />
+              </button>
+            </div>
+
+            <div class="week-days">
+              <button
+                class="day-pill"
+                *ngFor="let day of weekDays"
+                [class.selected]="day.isSelected"
+                (click)="selectDay(day)"
+              >
+                <span class="day-short">{{ day.shortLabel }}</span>
+                <span class="day-number">{{ day.dayNumber }}</span>
+                <div
+                  class="day-icon"
+                  [class.day-icon-active]="day.hasShift && day.shiftType === 'work'"
+                  [class.day-icon-sick]="day.shiftType === 'sick_leave'"
+                  [class.day-icon-vacation]="day.shiftType === 'vacation'"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 19h18"></path>
+                    <path d="M7 19V9a5 5 0 0 1 10 0v10"></path>
+                  </svg>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="selected-day-card" *ngIf="selectedDay">
+            <div class="selected-day-header">
+              <div class="selected-day-label">{{ getSelectedDayLabel() }}</div>
+              <div class="selected-day-tag" *ngIf="selectedShift?.type === 'work'">Смена</div>
+              <div class="selected-day-tag selected-day-tag-sick" *ngIf="selectedShift?.type === 'sick_leave'">Больничный</div>
+              <div class="selected-day-tag selected-day-tag-vac" *ngIf="selectedShift?.type === 'vacation'">Отпуск</div>
+            </div>
+
+            <ng-container *ngIf="selectedShift; else noShift">
+              <div class="selected-day-main" *ngIf="selectedShift.type === 'work'">
+                <div class="time-row">
+                  <span class="time-label">Ваша смена</span>
+                  <span class="time-value">
+                    {{ selectedShift.startTime }} – {{ selectedShift.endTime }}
+                  </span>
+                </div>
               </div>
-              <div class="slot-info">
-                <div class="slot-label">{{ slot.label }}</div>
-                <div class="slot-time">{{ slot.timeRange }}</div>
+
+              <div class="coworkers-block" *ngIf="selectedShift.coworkers?.length">
+                <div class="coworkers-title">Другие работники</div>
+                <div class="coworker-row" *ngFor="let coworker of selectedShift.coworkers">
+                  <span class="coworker-name">{{ coworker.name }}</span>
+                  <span class="coworker-time">{{ coworker.time }}</span>
+                </div>
               </div>
+            </ng-container>
+
+            <ng-template #noShift>
+              <div class="no-shift-text">
+                В этот день у вас нет смены.
+              </div>
+            </ng-template>
+          </div>
+        </section>
+
+        <!-- Section 2: stats -->
+        <section class="section">
+          <div class="section-title-row">
+            <span class="section-index">2</span>
+            <h2>Статистика вашей работы за прошедшие 30 дней</h2>
+          </div>
+
+          <div class="stats-card">
+            <button tuiButton size="s" appearance="secondary" class="stat-pill">
+              <span class="stat-label">Количество ваших рабочих смен</span>
+              <span class="stat-value">{{ stats.shiftsCount }}</span>
+            </button>
+            <button tuiButton size="s" appearance="secondary" class="stat-pill">
+              <span class="stat-label">Количество отработанных вами часов</span>
+              <span class="stat-value">{{ stats.workedHours }}</span>
+            </button>
+            <button tuiButton size="s" appearance="secondary" class="stat-pill">
+              <span class="stat-label">Часы, отданные сверхурочной работе</span>
+              <span class="stat-value">{{ stats.overtimeHours }}</span>
             </button>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <!-- Save Button -->
-      <div class="save-section">
-        <button class="save-btn" (click)="saveAvailability()">
-          Сохранить доступность
-        </button>
-      </div>
+        <!-- Section 3: желаемые часы работы (как в person-schedule) -->
+        <section class="section">
+          <div class="wishes-info-tip">
+            <span class="wishes-info-icon">i</span>
+            <span class="wishes-info-text">Укажите желаемые часы работы на предстоящую неделю</span>
+          </div>
 
-      <!-- Bottom Navigation -->
-      <nav class="bottom-nav">
-        <button class="nav-item active">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-        </button>
-        <button class="nav-item">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-        </button>
-        <button class="nav-item">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="20" x2="12" y2="10"/>
-            <line x1="18" y1="20" x2="18" y2="4"/>
-            <line x1="6" y1="20" x2="6" y2="16"/>
-          </svg>
-        </button>
-      </nav>
+          <div class="wishes-card wishes-card-form">
+            <div class="wishes-preferences-list">
+              <div class="wishes-pref-row" *ngFor="let pref of preferencesDays; let i = index">
+                <div class="wishes-pref-day">{{ pref.day }}</div>
+                <div class="wishes-pref-time-row">
+                  <span class="wishes-pref-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                      <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                  </span>
+                  <span class="wishes-pref-sep">/</span>
+                  <span class="wishes-pref-label">с</span>
+                  <input type="time" class="wishes-time-input" [(ngModel)]="pref.startTime" [name]="'start-' + i" />
+                  <span class="wishes-pref-label">до</span>
+                  <input type="time" class="wishes-time-input" [(ngModel)]="pref.endTime" [name]="'end-' + i" />
+                </div>
+              </div>
+            </div>
+            <div class="wishes-actions">
+              <button tuiButton size="s" appearance="secondary" class="wishes-btn-reset" (click)="resetPreferences()">
+                Сбросить
+              </button>
+              <button tuiButton size="s" appearance="secondary" class="wishes-btn-submit" (click)="savePreferences()" [disabled]="isSavingWishes">
+                Отправить выбор
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   `,
   styles: [`
@@ -171,514 +240,1032 @@ interface TimeSlot {
       -webkit-tap-highlight-color: transparent;
     }
 
-    .mobile-schedule {
+    .mobile-shell {
       min-height: 100vh;
-      background: #FAFAFA;
+      background: #f7f4f0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding-bottom: 80px;
-    }
-
-    /* Header */
-    .header {
-      padding: 20px 20px 16px;
-      background: white;
-    }
-
-    h1 {
-      font-size: 24px;
-      font-weight: 600;
-      margin: 0;
       color: #1a1a1a;
-    }
-
-    /* Calendar Section */
-    .calendar-section {
-      background: white;
-      padding: 20px;
-      margin-bottom: 12px;
-    }
-
-    .calendar-header {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      max-width: 430px;
+      margin: 0 auto;
+    }
+
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
       align-items: center;
-      margin-bottom: 20px;
+      justify-content: space-between;
+      padding: 12px 16px 8px;
+      background: #ffffff;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
     }
 
-    .month-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1a1a1a;
-    }
-
-    .nav-btn {
+    .icon-button {
       width: 32px;
       height: 32px;
-      border: 1px solid #E5E5E5;
-      background: white;
-      border-radius: 8px;
-      font-size: 20px;
-      color: #666;
-      cursor: pointer;
+      border-radius: 999px;
+      border: 1px solid #e4e0da;
+      background: #faf7f3;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .weekdays {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      margin-bottom: 8px;
-    }
-
-    .weekday-label {
-      text-align: center;
-      font-size: 12px;
-      color: #999;
-      font-weight: 500;
-      padding: 8px 0;
-    }
-
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-    }
-
-    .day-cell {
-      aspect-ratio: 1;
-      border: none;
-      background: #F5F5F5;
-      border-radius: 12px;
-      font-size: 14px;
-      color: #1a1a1a;
       cursor: pointer;
-      transition: all 0.2s;
-      font-weight: 500;
-      position: relative;
+      color: #8b7a64;
+      padding: 0;
     }
 
-    .day-cell.other-month {
-      color: #CCC;
-    }
-
-    .day-cell.selected {
-      background: #A8D5FF;
-      color: #1a1a1a;
-    }
-
-    .day-cell.has-shift::after {
-      content: '';
-      position: absolute;
-      bottom: 4px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #666;
-    }
-
-    .day-cell.sick-day {
-      background: #FFB8B8;
-      color: #8B2E2E;
-    }
-
-    .day-cell.vacation-day {
-      background: #FFB8B8;
-      color: #8B2E2E;
-    }
-
-    .day-cell:active {
-      transform: scale(0.95);
-    }
-
-    /* Shifts Section */
-    .shifts-section {
-      background: white;
-      padding: 16px 20px;
-      margin-bottom: 12px;
-    }
-
-    .shift-item {
-      padding: 12px 0;
-      border-bottom: 1px solid #F5F5F5;
-    }
-
-    .shift-item:last-child {
-      border-bottom: none;
-    }
-
-    .shift-date {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 6px;
-    }
-
-    .shift-details {
+    .logo-wordmark {
       display: flex;
-      align-items: center;
-      gap: 12px;
+      align-items: baseline;
+      gap: 2px;
+      font-weight: 600;
     }
 
-    .shift-time {
-      font-size: 14px;
-      color: #1a1a1a;
-      font-weight: 500;
-    }
-
-    .shift-type {
-      font-size: 13px;
-      color: #8B4513;
-      font-weight: 500;
-    }
-
-    .shift-type.type-sick,
-    .shift-type.type-vacation {
-      color: #8B2E2E;
-    }
-
-    /* Availability Section */
-    .availability-section {
-      background: white;
-      padding: 20px;
-      margin-bottom: 12px;
-    }
-
-    .section-title {
+    .logo-text-main {
       font-size: 16px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin: 0 0 6px 0;
+      letter-spacing: 0.02em;
     }
 
-    .section-subtitle {
-      font-size: 13px;
-      color: #999;
-      margin: 0 0 20px 0;
+    .logo-accent {
+      color: #ff7a2e;
+      font-size: 18px;
     }
 
-    .date-slots {
-      margin-bottom: 24px;
-    }
-
-    .date-slots:last-child {
-      margin-bottom: 0;
-    }
-
-    .date-header {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 12px;
-    }
-
-    .time-slots {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-
-    .time-slot {
-      border: 1.5px solid #E5E5E5;
-      background: white;
-      border-radius: 12px;
-      padding: 12px 8px;
-      cursor: pointer;
-      transition: all 0.2s;
+    .profile-card {
+      position: absolute;
+      left: 12px;
+      top: 52px;
+      width: 260px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+      padding: 14px 14px 10px;
       display: flex;
       flex-direction: column;
+      gap: 10px;
+    }
+
+    .profile-card-header {
+      display: flex;
+      gap: 10px;
       align-items: center;
+    }
+
+    .profile-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: #f4e4d1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #7b5530;
+    }
+
+    .profile-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .profile-name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .profile-role {
+      font-size: 12px;
+      color: #8b8b8b;
+    }
+
+    .profile-meta {
+      padding-top: 4px;
+      border-top: 1px solid #f1ece4;
+      display: flex;
+      flex-direction: column;
       gap: 6px;
     }
 
-    .time-slot:active {
-      transform: scale(0.95);
-    }
-
-    .time-slot.selected {
-      background: #FFE4D1;
-      border-color: #FF8C42;
-    }
-
-    .slot-icon {
-      width: 24px;
-      height: 24px;
-      color: #666;
-    }
-
-    .time-slot.selected .slot-icon {
-      color: #FF8C42;
-    }
-
-    .slot-info {
-      text-align: center;
-    }
-
-    .slot-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 2px;
-    }
-
-    .slot-time {
-      font-size: 11px;
-      color: #999;
-    }
-
-    /* Save Section */
-    .save-section {
-      padding: 0 20px 20px;
-    }
-
-    .save-btn {
-      width: 100%;
-      padding: 16px;
-      border: none;
-      background: #FF8C42;
-      color: white;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .save-btn:active {
-      transform: scale(0.98);
-      background: #FF7A2E;
-    }
-
-    /* Bottom Navigation */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 70px;
-      background: white;
-      border-top: 1px solid #E5E5E5;
+    .meta-row {
       display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 0 20px;
-      z-index: 100;
+      justify-content: space-between;
+      font-size: 12px;
     }
 
-    .nav-item {
-      width: 48px;
-      height: 48px;
-      border: none;
-      background: transparent;
-      border-radius: 12px;
+    .meta-label {
+      color: #9b8f80;
+    }
+
+    .meta-value {
+      font-weight: 500;
+      color: #3b342b;
+    }
+
+    .meta-status {
+      font-weight: 500;
+      color: #1a7f37;
+    }
+
+    .logout-btn {
+      margin-top: 6px;
+      align-self: flex-start;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #e4d9cf;
+      background: #faf4ee;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #5c4731;
+    }
+
+    .notifications-card {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 52px;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 12px 14px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .notif-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #b36b30;
+      font-weight: 600;
+    }
+
+    .notif-body {
+      font-size: 13px;
+      color: #3b342b;
+    }
+
+    .content {
+      flex: 1;
+      padding: 12px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-index {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid #f1c38b;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 11px;
+      color: #c96a26;
+      flex-shrink: 0;
+    }
+
+    .section-title-row h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .week-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 14px 14px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .week-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #6b6154;
+    }
+
+    .week-range {
+      font-weight: 500;
+    }
+
+    .arrow-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid #e4d9cf;
+      background: #faf4ee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
       cursor: pointer;
-      color: #999;
-      transition: all 0.2s;
+      font-size: 16px;
+      color: #7a6046;
     }
 
-    .nav-item.active {
-      background: #FFE4D1;
-      color: #FF8C42;
+    .week-days {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
     }
 
-    .nav-item:active {
-      transform: scale(0.9);
+    .day-pill {
+      flex: 0 0 46px;
+      border-radius: 18px;
+      border: 1px solid transparent;
+      background: #f4eee7;
+      padding: 6px 4px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+      color: #7a6a58;
+      font-size: 11px;
     }
 
-    /* Safe area insets for iOS */
-    @supports (padding-bottom: env(safe-area-inset-bottom)) {
-      .bottom-nav {
-        padding-bottom: env(safe-area-inset-bottom);
-        height: calc(70px + env(safe-area-inset-bottom));
+    .day-pill.selected {
+      background: #111111;
+      color: #ffffff;
+    }
+
+    .day-short {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 10px;
+    }
+
+    .day-number {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .day-icon {
+      margin-top: 2px;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c4b59f;
+    }
+
+    .day-pill.selected .day-icon {
+      background: #fdf2e6;
+      border-color: #f7d1a5;
+      color: #c96a26;
+    }
+
+    .day-icon-active {
+      color: #c96a26;
+    }
+
+    .day-icon-sick {
+      color: #b3261e;
+    }
+
+    .day-icon-vacation {
+      color: #0b8067;
+    }
+
+    .selected-day-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 14px 14px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .selected-day-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .selected-day-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #3b342b;
+    }
+
+    .selected-day-tag {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #fdf2e6;
+      color: #c96a26;
+      border: 1px solid #f5cf9f;
+    }
+
+    .selected-day-tag-sick {
+      background: #ffe5e1;
+      border-color: #ffb3a7;
+      color: #b3261e;
+    }
+
+    .selected-day-tag-vac {
+      background: #e3f5ef;
+      border-color: #b5e3d2;
+      color: #0b8067;
+    }
+
+    .selected-day-main {
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .time-label {
+      color: #8b8176;
+    }
+
+    .time-value {
+      font-weight: 600;
+    }
+
+    .coworkers-block {
+      padding-top: 4px;
+      border-top: 1px dashed #efe2d4;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .coworkers-title {
+      font-size: 12px;
+      color: #8b8176;
+      margin-bottom: 2px;
+    }
+
+    .coworker-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 2px 0;
+    }
+
+    .coworker-name {
+      color: #3b342b;
+    }
+
+    .coworker-time {
+      color: #8b8176;
+    }
+
+    .no-shift-text {
+      font-size: 13px;
+      color: #8b8176;
+    }
+
+    .stats-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 14px 14px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stat-pill {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid #efe2d4;
+      background: #faf4ee;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      cursor: default;
+    }
+
+    .stat-label {
+      color: #5f5343;
+      text-align: left;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      color: #111111;
+      padding-left: 8px;
+    }
+
+    .wishes-card {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 14px 14px 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .wishes-image {
+      width: 100%;
+      border-radius: 18px;
+      background: radial-gradient(circle at 20% 20%, #f9e0c7, #d9c7b4);
+      aspect-ratio: 4 / 3;
+    }
+
+    .wishes-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0;
+      color: #3b342b;
+    }
+
+    .wishes-text {
+      font-size: 12px;
+      color: #8b8176;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .wishes-info-tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .wishes-info-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #f5a623;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .wishes-info-text {
+      font-size: 13px;
+      color: #3b342b;
+      line-height: 1.4;
+    }
+
+    .wishes-card-form {
+      background: #f4eee7;
+      border-radius: 20px;
+      padding: 14px 14px 18px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    .wishes-preferences-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .wishes-pref-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .wishes-pref-day {
+      font-size: 13px;
+      font-weight: 600;
+      color: #3b342b;
+    }
+
+    .wishes-pref-time-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .wishes-pref-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #8b7a64;
+    }
+
+    .wishes-pref-sep {
+      color: #c4b59f;
+      font-size: 12px;
+    }
+
+    .wishes-pref-label {
+      font-size: 12px;
+      color: #6b6154;
+    }
+
+    .wishes-time-input {
+      width: 72px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #e4e0da;
+      background: #faf7f3;
+      font-size: 13px;
+      color: #1a1a1a;
+    }
+
+    .wishes-time-input::-webkit-datetime-edit {
+      color: #1a1a1a;
+    }
+
+    .wishes-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .wishes-btn-reset {
+      background: #e8e4de;
+      color: #5f5343;
+      border: 1px solid #d9d2c9;
+    }
+
+    .wishes-btn-submit {
+      background: #f0e9e0;
+      color: #5f5343;
+      border: 1px solid #e4d9cf;
+    }
+
+    @media (min-width: 768px) {
+      .mobile-shell {
+        border-radius: 32px;
+        margin-top: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
       }
     }
   `]
 })
 export class MobileScheduleComponent implements OnInit {
-  currentDate = new Date(2025, 10, 1); // Ноябрь 2025
-  calendarDays: Day[] = [];
-  monthYearDisplay = '';
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private shiftService = inject(ShiftService);
+  private wishService = inject(WishService);
 
-  shifts: Shift[] = [
-    { id: '1', date: '2025-11-20', startTime: '08:00', endTime: '18:00', type: 'regular', status: 'Смена' },
-    { id: '2', date: '2025-11-21', startTime: '14:00', endTime: '22:00', type: 'regular', status: 'Смена' },
-    { id: '3', date: '2025-11-22', startTime: '08:00', endTime: '18:00', type: 'regular', status: 'Смена' },
-    { id: '4', date: '2025-11-24', startTime: '', endTime: '', type: 'sick', status: 'Больничный' },
-    { id: '5', date: '2025-11-25', startTime: '', endTime: '', type: 'vacation', status: 'Отпуск' }
-  ];
+  currentUser: User | null = null;
+  employeeName = 'Сотрудник';
+  employeeRoleLabel = 'Бариста';
+  coffeeShopLabel = 'Simple Coffee';
+  userCoffeeShopId = '';
 
-  upcomingDates = [
+  /** Желаемые часы на предстоящую неделю (как в person-schedule) */
+  preferencesDays: TimePreference[] = [];
+  isSavingWishes = false;
+
+  currentWeekStart: Date = new Date();
+  weekDays: WeekDay[] = [];
+  weekRangeLabel = '';
+  selectedDay: WeekDay | null = null;
+
+  dayShifts: DayShift[] = [
     {
-      label: 'Понедельник, 27 ноября',
-      date: '2025-11-27',
-      timeSlots: [
-        { label: 'Утро', timeRange: '(8 - 12)', isSelected: false },
-        { label: 'День', timeRange: '(13 - 17)', isSelected: false },
-        { label: 'Вечер', timeRange: '(18 - 22)', isSelected: false }
+      date: '2025-11-20',
+      type: 'work',
+      startTime: '08:00',
+      endTime: '18:00',
+      coworkers: [
+        { name: 'Мария Петрова', time: '12:00 – 22:00' },
+        { name: 'Сергей Сафронов', time: '08:00 – 16:00' },
+        { name: 'Артём Попов', time: '13:00 – 20:00' }
       ]
     },
     {
-      label: 'Вторник, 28 ноября',
-      date: '2025-11-28',
-      timeSlots: [
-        { label: 'Утро', timeRange: '(8 - 12)', isSelected: false },
-        { label: 'День', timeRange: '(13 - 17)', isSelected: false },
-        { label: 'Вечер', timeRange: '(18 - 22)', isSelected: false }
-      ]
+      date: '2025-11-21',
+      type: 'work',
+      startTime: '12:00',
+      endTime: '22:00',
+      coworkers: []
     },
     {
-      label: 'Среда, 29 ноября',
-      date: '2025-11-29',
-      timeSlots: [
-        { label: 'Утро', timeRange: '(8 - 12)', isSelected: false },
-        { label: 'День', timeRange: '(13 - 17)', isSelected: false },
-        { label: 'Вечер', timeRange: '(18 - 22)', isSelected: false }
-      ]
+      date: '2025-11-22',
+      type: 'work',
+      startTime: '08:00',
+      endTime: '18:00',
+      coworkers: []
     },
     {
-      label: 'Четверг, 30 ноября',
-      date: '2025-11-30',
-      timeSlots: [
-        { label: 'Утро', timeRange: '(8 - 12)', isSelected: false },
-        { label: 'День', timeRange: '(13 - 17)', isSelected: false },
-        { label: 'Вечер', timeRange: '(18 - 22)', isSelected: false }
-      ]
+      date: '2025-11-23',
+      type: 'day_off'
+    },
+    {
+      date: '2025-11-24',
+      type: 'sick_leave'
+    },
+    {
+      date: '2025-11-25',
+      type: 'vacation'
+    },
+    {
+      date: '2025-11-26',
+      type: 'day_off'
     }
   ];
 
-  ngOnInit() {
-    this.generateCalendar();
+  stats = {
+    shiftsCount: 22,
+    workedHours: 128,
+    overtimeHours: 2
+  };
+
+  showProfile = false;
+  showNotifications = false;
+
+  ngOnInit(): void {
+    this.loadUser();
+    this.currentWeekStart = this.getWeekStart(new Date());
+    this.buildWeek();
+    this.loadWeekShifts();
+    this.initializePreferences();
   }
 
-  generateCalendar() {
-    this.calendarDays = [];
-    
-    const year = this.currentDate.getFullYear();
-    const month = this.currentDate.getMonth();
-    
-    // Первый день месяца
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    // Начинаем с понедельника
-    const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-    
-    // Добавляем дни предыдущего месяца
-    const prevMonthLastDay = new Date(year, month, 0);
-    for (let i = startDay - 1; i >= 0; i--) {
-      const date = new Date(year, month - 1, prevMonthLastDay.getDate() - i);
-      this.calendarDays.push({
+  get selectedShift(): DayShift | undefined {
+    if (!this.selectedDay) {
+      return undefined;
+    }
+    return this.dayShifts.find(s => s.date === this.selectedDay!.date);
+  }
+
+  get initials(): string {
+    if (!this.employeeName) {
+      return '';
+    }
+    const parts = this.employeeName.trim().split(' ');
+    if (parts.length === 1) {
+      return parts[0].charAt(0).toUpperCase();
+    }
+    return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+  }
+
+  private loadUser(): void {
+    this.currentUser = this.authService.getCurrentUserValue();
+    if (this.currentUser) {
+      this.employeeName = this.currentUser.fullName || this.currentUser.email;
+
+      if (this.currentUser.role === 'manager') {
+        this.employeeRoleLabel = 'Менеджер';
+      } else if (this.currentUser.role === 'admin') {
+        this.employeeRoleLabel = 'Администратор';
+      } else {
+        this.employeeRoleLabel = 'Бариста';
+      }
+
+      if (typeof this.currentUser.coffeeShop === 'string') {
+        this.userCoffeeShopId = this.currentUser.coffeeShop;
+        this.coffeeShopLabel = 'Simple Coffee';
+      } else if (this.currentUser.coffeeShop) {
+        const shop: any = this.currentUser.coffeeShop;
+        this.userCoffeeShopId = shop._id || shop.id || '';
+        this.coffeeShopLabel = shop.name || shop.address || 'Simple Coffee';
+      }
+    }
+  }
+
+  /** Инициализация пожеланий на следующую неделю (как в person-schedule) */
+  initializePreferences(): void {
+    const nextWeekStart = new Date();
+    nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+    const startDate = this.getWeekStart(nextWeekStart);
+
+    this.preferencesDays = [];
+    const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const dayLabel = `${dayNames[date.getDay()]}, ${date.getDate()} ${date.toLocaleDateString('ru-RU', { month: 'long' })}`;
+      this.preferencesDays.push({
+        day: dayLabel,
         date: this.formatDate(date),
+        startTime: '08:00',
+        endTime: '16:00'
+      });
+    }
+  }
+
+  /** Сохранение пожеланий через WishService */
+  savePreferences(): void {
+    if (!this.currentUser) {
+      alert('Ошибка: пользователь не авторизован');
+      return;
+    }
+    if (!this.userCoffeeShopId) {
+      alert('Ошибка: не указана кофейня');
+      return;
+    }
+    if (!confirm('Сохранить желаемые часы на следующую неделю? Существующие пожелания будут пропущены.')) {
+      return;
+    }
+
+    this.isSavingWishes = true;
+    let saved = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+    const total = this.preferencesDays.length;
+
+    const checkDone = () => {
+      if (saved + skipped + errors.length === total) {
+        this.isSavingWishes = false;
+        let msg = `Сохранено: ${saved}`;
+        if (skipped > 0) msg += `, пропущено (уже есть): ${skipped}`;
+        if (errors.length) msg += `\nОшибки:\n${errors.join('\n')}`;
+        alert(msg);
+      }
+    };
+
+    this.preferencesDays.forEach(pref => {
+      const wishData: WishCreate = {
+        date: pref.date,
+        type: 'work',
+        startTime: pref.startTime,
+        endTime: pref.endTime,
+        coffeeShop: this.userCoffeeShopId
+      };
+      this.wishService.createWish(wishData).subscribe({
+        next: () => { saved++; checkDone(); },
+        error: (err: any) => {
+          if (err?.error?.message?.includes?.('E11000') || err?.error?.message?.includes?.('duplicate')) {
+            skipped++;
+          } else {
+            errors.push(`${pref.day}: ${err?.error?.message || err?.message || 'Ошибка'}`);
+          }
+          checkDone();
+        }
+      });
+    });
+  }
+
+  /** Сброс пожеланий к значениям по умолчанию */
+  resetPreferences(): void {
+    if (confirm('Сбросить все введённые часы к значениям по умолчанию?')) {
+      this.initializePreferences();
+    }
+  }
+
+  private buildWeek(): void {
+    const weekStart = new Date(this.currentWeekStart);
+    const weekdayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+    this.weekDays = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      const dateStr = this.formatDate(date);
+
+      this.weekDays.push({
+        date: dateStr,
+        shortLabel: weekdayLabels[i],
         dayNumber: date.getDate(),
-        dayName: '',
-        isCurrentMonth: false,
-        isSelected: false
+        isSelected: false,
+        hasShift: false,
+        shiftType: 'none'
       });
     }
-    
-    // Добавляем дни текущего месяца
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      const date = new Date(year, month, i);
-      this.calendarDays.push({
-        date: this.formatDate(date),
-        dayNumber: i,
-        dayName: '',
-        isCurrentMonth: true,
-        isSelected: i === 24 // Выбран 24-й день
-      });
+
+    this.selectedDay = this.weekDays[2] || this.weekDays[0] || null;
+    if (this.selectedDay) {
+      this.selectedDay.isSelected = true;
     }
-    
-    // Добавляем дни следующего месяца
-    const remainingDays = 42 - this.calendarDays.length;
-    for (let i = 1; i <= remainingDays; i++) {
-      const date = new Date(year, month + 1, i);
-      this.calendarDays.push({
-        date: this.formatDate(date),
-        dayNumber: i,
-        dayName: '',
-        isCurrentMonth: false,
-        isSelected: false
-      });
+
+    this.updateWeekRange();
+  }
+
+  private updateWeekRange(): void {
+    if (this.weekDays.length === 0) {
+      this.weekRangeLabel = '';
+      return;
     }
-    
-    this.updateMonthDisplay();
+    const startDate = new Date(this.weekDays[0].date);
+    const endDate = new Date(this.weekDays[6].date);
+
+    const startStr = startDate.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long'
+    });
+
+    const endStr = endDate.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    this.weekRangeLabel = `${startStr} – ${endStr}`;
   }
 
-  updateMonthDisplay() {
-    const months = [
-      'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-      'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-    ];
-    this.monthYearDisplay = `${months[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`;
+  previousWeek(): void {
+    this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
+    this.buildWeek();
+    this.loadWeekShifts();
   }
 
-  previousMonth() {
-    this.currentDate.setMonth(this.currentDate.getMonth() - 1);
-    this.generateCalendar();
+  nextWeek(): void {
+    this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
+    this.buildWeek();
+    this.loadWeekShifts();
   }
 
-  nextMonth() {
-    this.currentDate.setMonth(this.currentDate.getMonth() + 1);
-    this.generateCalendar();
+  selectDay(day: WeekDay): void {
+    this.weekDays.forEach(d => (d.isSelected = false));
+    day.isSelected = true;
+    this.selectedDay = day;
   }
 
-  formatDate(date: Date): string {
+  getSelectedDayLabel(): string {
+    if (!this.selectedDay) {
+      return '';
+    }
+    const date = new Date(this.selectedDay.date);
+    const weekdayNames = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+    const dayName = weekdayNames[date.getDay()];
+    const day = date.getDate();
+    const month = date.toLocaleDateString('ru-RU', { month: 'long' });
+    return `${this.capitalizeFirstLetter(dayName)}, ${day} ${month}`;
+  }
+
+  toggleProfileCard(): void {
+    this.showProfile = !this.showProfile;
+    if (this.showProfile) {
+      this.showNotifications = false;
+    }
+  }
+
+  toggleNotifications(): void {
+    this.showNotifications = !this.showNotifications;
+    if (this.showNotifications) {
+      this.showProfile = false;
+    }
+  }
+
+  logout(): void {
+    this.authService.logout().subscribe({
+      next: () => {},
+      error: () => {},
+      complete: () => {
+        this.router.navigate(['/login']);
+      }
+    });
+  }
+
+  private loadWeekShifts(): void {
+    if (!this.currentUser || this.weekDays.length === 0) {
+      return;
+    }
+
+    const userId = (this.currentUser as any)._id || (this.currentUser as any).id;
+    if (!userId) {
+      return;
+    }
+
+    const weekStartStr = this.weekDays[0].date;
+
+    this.shiftService.getShifts({
+      user: userId,
+      dateFrom: weekStartStr
+    }).subscribe({
+      next: (response: any) => {
+        let shiftsArray: ApiShift[] = [];
+
+        if (Array.isArray(response)) {
+          shiftsArray = response as ApiShift[];
+        } else if (response?.data && Array.isArray(response.data.shifts)) {
+          shiftsArray = response.data.shifts as ApiShift[];
+        } else if (Array.isArray(response?.shifts)) {
+          shiftsArray = response.shifts as ApiShift[];
+        } else if (Array.isArray(response?.data)) {
+          shiftsArray = response.data as ApiShift[];
+        }
+
+        const weekStart = new Date(this.weekDays[0].date);
+        const weekEnd = new Date(this.weekDays[6].date);
+        weekStart.setHours(0, 0, 0, 0);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        this.dayShifts = shiftsArray
+          .map(shift => this.mapApiShiftToDayShift(shift))
+          .filter(shift => {
+            const d = new Date(shift.date);
+            return d >= weekStart && d <= weekEnd;
+          });
+
+        this.updateWeekFromShifts();
+      },
+      error: () => {
+        // В случае ошибки просто не показываем смены, UI останется с заглушками
+      }
+    });
+  }
+
+  private updateWeekFromShifts(): void {
+    this.weekDays = this.weekDays.map(day => {
+      const shift = this.dayShifts.find(s => s.date === day.date);
+      return {
+        ...day,
+        hasShift: !!shift && shift.type !== 'day_off',
+        shiftType: shift ? shift.type : 'none'
+      };
+    });
+
+    if (this.selectedDay) {
+      const updated = this.weekDays.find(d => d.date === this.selectedDay!.date);
+      this.selectedDay = updated || this.weekDays[0] || null;
+      if (this.selectedDay) {
+        this.selectedDay.isSelected = true;
+      }
+    }
+  }
+
+  private mapApiShiftToDayShift(shift: ApiShift): DayShift {
+    let dateStr: string;
+    try {
+      const dateObj = new Date(shift.date);
+      if (isNaN(dateObj.getTime())) {
+        dateStr = new Date().toISOString().split('T')[0];
+      } else {
+        dateStr = dateObj.toISOString().split('T')[0];
+      }
+    } catch {
+      dateStr = new Date().toISOString().split('T')[0];
+    }
+
+    return {
+      date: dateStr,
+      type: shift.type as DayShift['type'],
+      startTime: shift.startTime || undefined,
+      endTime: shift.endTime || undefined,
+      coworkers: []
+    };
+  }
+
+  private formatDate(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
-  selectDay(day: Day) {
-    if (!day.isCurrentMonth) return;
-    
-    this.calendarDays.forEach(d => d.isSelected = false);
-    day.isSelected = true;
+  private getWeekStart(date: Date): Date {
+    const result = new Date(date);
+    const dayOfWeek = result.getDay(); // 0 (Sun) - 6 (Sat)
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // сделать понедельник первым
+    result.setDate(result.getDate() + diff);
+    result.setHours(0, 0, 0, 0);
+    return result;
   }
 
-  hasShift(date: string): boolean {
-    return this.shifts.some(shift => shift.date === date);
-  }
-
-  getShiftType(date: string): string | null {
-    const shift = this.shifts.find(s => s.date === date);
-    return shift ? shift.type : null;
-  }
-
-  formatShiftDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    const dayName = days[date.getDay()];
-    const day = date.getDate();
-    const months = [
-      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-    ];
-    const month = months[date.getMonth()];
-    
-    return `${dayName}, ${day} ${month}`;
-  }
-
-  toggleTimeSlot(date: any, slot: TimeSlot) {
-    slot.isSelected = !slot.isSelected;
-  }
-
-  saveAvailability() {
-    console.log('Сохранение доступности...');
-    
-    const availability = this.upcomingDates.map(date => ({
-      date: date.date,
-      slots: date.timeSlots
-        .filter(slot => slot.isSelected)
-        .map(slot => slot.label)
-    })).filter(d => d.slots.length > 0);
-    
-    console.log('Выбранная доступность:', availability);
-    alert('Доступность сохранена!');
+  private capitalizeFirstLetter(value: string): string {
+    if (!value) {
+      return value;
+    }
+    return value.charAt(0).toUpperCase() + value.slice(1);
   }
 }
+

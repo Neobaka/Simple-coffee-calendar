@@ -250,7 +250,8 @@
   background: #fff;
   border: 1px solid #eceff4;
   border-radius: 14px;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .medical-table {
@@ -627,4 +628,24 @@
   .search-box {
     min-width: 180px;
   }
+}
+
+.medical-horizontal-scroll {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  padding-top: 4px;
+  background: linear-gradient(to bottom, rgba(246, 247, 252, 0), #f6f7fc 40%);
+  z-index: 5;
+}
+
+.medical-horizontal-scroll__inner {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 16px;
+}
+
+.medical-horizontal-scroll__spacer {
+  height: 1px;
 }

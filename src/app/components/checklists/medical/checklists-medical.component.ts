@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, OnInit, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TuiDropdown, TuiIcon } from '@taiga-ui/core';
@@ -96,9 +96,18 @@ interface MedicalTableApiResponse {
   templateUrl: './checklists-medical.component.html',
   styleUrl: './checklists-medical.component.scss',
 })
-export class ChecklistsMedicalComponent implements OnInit {
+export class ChecklistsMedicalComponent implements OnInit, AfterViewInit {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/users`;
+
+  @ViewChild('tableCard')
+  tableCard?: ElementRef<HTMLDivElement>;
+
+  @ViewChild('bottomScroller')
+  bottomScroller?: ElementRef<HTMLDivElement>;
+
+  tableHasHorizontalScroll = false;
+  tableScrollWidth = 0;
 
   sortKey: MedicalSortKey | null = null;
   sortDirection: 'asc' | 'desc' = 'desc';
@@ -161,6 +170,15 @@ export class ChecklistsMedicalComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+  }
+
+  ngAfterViewInit(): void {
+    this.updateHorizontalScrollState();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateHorizontalScrollState();
   }
 
   get filteredRows(): MedicalRow[] {
@@ -292,6 +310,7 @@ export class ChecklistsMedicalComponent implements OnInit {
     this.originalTableRows = this.editTableRows.map((r) => ({ ...r }));
     this.isTableEditMode = true;
     this.tableEditSaveError = null;
+    setTimeout(() => this.updateHorizontalScrollState());
   }
 
   /** Отменить редактирование таблицы */
@@ -300,6 +319,7 @@ export class ChecklistsMedicalComponent implements OnInit {
     this.editTableRows = [];
     this.originalTableRows = [];
     this.tableEditSaveError = null;
+    setTimeout(() => this.updateHorizontalScrollState());
   }
 
   /** Сохранить изменения таблицы: PATCH только по строкам с изменениями, в теле только изменённые поля */
@@ -589,12 +609,14 @@ export class ChecklistsMedicalComponent implements OnInit {
         this.selectAllStatuses();
         this.selectAllCoffees();
         this.isLoading = false;
+        setTimeout(() => this.updateHorizontalScrollState());
       },
       error: () => {
         this.error = 'Не удалось загрузить медосмотры сотрудников';
         this.rows = [];
         this.coffeeShopOptions = [];
         this.isLoading = false;
+        setTimeout(() => this.updateHorizontalScrollState());
       },
     });
   }
@@ -669,6 +691,39 @@ export class ChecklistsMedicalComponent implements OnInit {
     }
     const trimmed = value.trim();
     return trimmed || '—';
+  }
+
+  onTableScroll(): void {
+    const tableCardEl = this.tableCard?.nativeElement;
+    const bottomEl = this.bottomScroller?.nativeElement;
+    if (!tableCardEl || !bottomEl) return;
+    if (Math.abs(bottomEl.scrollLeft - tableCardEl.scrollLeft) > 1) {
+      bottomEl.scrollLeft = tableCardEl.scrollLeft;
+    }
+  }
+
+  onBottomScroll(): void {
+    const tableCardEl = this.tableCard?.nativeElement;
+    const bottomEl = this.bottomScroller?.nativeElement;
+    if (!tableCardEl || !bottomEl) return;
+    if (Math.abs(tableCardEl.scrollLeft - bottomEl.scrollLeft) > 1) {
+      tableCardEl.scrollLeft = bottomEl.scrollLeft;
+    }
+  }
+
+  private updateHorizontalScrollState(): void {
+    const tableCardEl = this.tableCard?.nativeElement;
+    if (!tableCardEl) {
+      this.tableHasHorizontalScroll = false;
+      this.tableScrollWidth = 0;
+      return;
+    }
+    this.tableScrollWidth = tableCardEl.scrollWidth;
+    this.tableHasHorizontalScroll = tableCardEl.scrollWidth > tableCardEl.clientWidth + 1;
+    const bottomEl = this.bottomScroller?.nativeElement;
+    if (bottomEl) {
+      bottomEl.scrollLeft = tableCardEl.scrollLeft;
+    }
   }
 }
 

@@ -117,7 +117,7 @@
   @if (isLoading) {
     <div class="empty">Загрузка медосмотров...</div>
   } @else {
-    <div class="table-card">
+    <div class="table-card" #tableCard (scroll)="onTableScroll()">
       <table class="medical-table">
         <thead>
           <tr>
@@ -184,6 +184,14 @@
         </tbody>
       </table>
     </div>
+
+    @if (tableHasHorizontalScroll) {
+      <div class="medical-horizontal-scroll">
+        <div class="medical-horizontal-scroll__inner" #bottomScroller (scroll)="onBottomScroll()">
+          <div class="medical-horizontal-scroll__spacer" [style.width.px]="tableScrollWidth"></div>
+        </div>
+      </div>
+    }
   }
 
   @if (selectedUserId) {

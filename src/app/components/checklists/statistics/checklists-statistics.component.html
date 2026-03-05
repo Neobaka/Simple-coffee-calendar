@@ -1,0 +1,315 @@
+<div class="statistics">
+  <div class="filters">
+    <div class="filters__left">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M7.66634 1.83337C6.9003 1.83337 6.14175 1.98426 5.43402 2.27741C4.72629 2.57056 4.08323 3.00024 3.54155 3.54192C2.99988 4.08359 2.5702 4.72665 2.27704 5.43439C1.98389 6.14212 1.83301 6.90066 1.83301 7.66671C1.83301 8.43275 1.98389 9.1913 2.27704 9.89903C2.5702 10.6068 2.99988 11.2498 3.54155 11.7915C4.08323 12.3332 4.72629 12.7629 5.43402 13.056C6.14175 13.3492 6.9003 13.5 7.66634 13.5C9.21344 13.5 10.6972 12.8855 11.7911 11.7915C12.8851 10.6975 13.4997 9.2138 13.4997 7.66671C13.4997 6.11961 12.8851 4.63588 11.7911 3.54192C10.6972 2.44796 9.21344 1.83337 7.66634 1.83337ZM0.833008 7.66671C0.833008 3.89337 3.89301 0.833374 7.66634 0.833374C11.4397 0.833374 14.4997 3.89337 14.4997 7.66671C14.4997 9.37337 13.8737 10.9347 12.839 12.132L15.0197 14.3134C15.0688 14.3591 15.1082 14.4143 15.1355 14.4757C15.1629 14.537 15.1776 14.6032 15.1787 14.6704C15.1799 14.7375 15.1676 14.8042 15.1424 14.8664C15.1173 14.9287 15.0798 14.9853 15.0324 15.0327C14.9849 15.0802 14.9283 15.1176 14.8661 15.1428C14.8038 15.1679 14.7371 15.1803 14.67 15.1791C14.6029 15.1779 14.5366 15.1632 14.4753 15.1359C14.414 15.1086 14.3588 15.0692 14.313 15.02L12.1317 12.8394C10.8922 13.9133 9.30634 14.5031 7.66634 14.5C3.89301 14.5 0.833008 11.44 0.833008 7.66671Z" fill="#686A7C"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Поиск"
+          class="search-input"
+          [ngModel]="searchQuery"
+          (ngModelChange)="searchQuery = $event; onFiltersChanged()"
+        />
+      </div>
+    </div>
+
+    <div class="filters__right">
+      <button
+        type="button"
+        class="filter-chip"
+        [tuiDropdown]="coffeeMenu"
+        [(tuiDropdownOpen)]="coffeeDropdownOpen"
+      >
+        <span>{{ coffeeChipLabel() }}</span>
+        @if (selectedCoffeeShops.length > 0) {
+          <span class="chip-count">{{ selectedCoffeeShops.length }}</span>
+        }
+        <tui-icon icon="@tui.chevron-down" class="pill-arrow" />
+      </button>
+    </div>
+  </div>
+
+  <ng-template #coffeeMenu>
+    <div class="dropdown-card" (click)="$event.stopPropagation()">
+      <div class="dropdown-head">
+        <span>Все кофейни</span>
+        <button type="button" (click)="selectAllCoffees()">Выбрать все</button>
+      </div>
+      <div class="dropdown-list">
+        @for (shop of coffeeShopOptions; track shop) {
+          <label class="dropdown-row">
+            <input type="checkbox" [checked]="isCoffeeSelected(shop)" (change)="toggleCoffee(shop)" />
+            <span>{{ shop }}</span>
+          </label>
+        }
+      </div>
+      <div class="dropdown-head dropdown-head--bottom">
+        <button type="button" (click)="clearCoffees()">Отменить выбор</button>
+      </div>
+    </div>
+  </ng-template>
+
+  @if (isLoading) {
+    <div class="empty">Загрузка статистики...</div>
+  }
+
+  @if (errorMessage) {
+    <div class="empty">{{ errorMessage }}</div>
+  }
+
+  <div class="statistics-table-card">
+    <div class="statistics-table-scroll">
+      <table class="statistics-table">
+        <thead>
+          <tr>
+            @for (column of headerColumns; track column.key) {
+              <th [class.coffee-col]="column.key === 'coffeeShop'">
+                <div class="th-content">
+                  <span>{{ column.label }}</span>
+                  <button
+                    type="button"
+                    class="th-sort-btn"
+                    [class.active]="sortKey === column.key"
+                    (click)="toggleSort(column.key)"
+                  >
+                    <img [src]="sortIcon(column.key)" alt="" class="th-sort-icon" />
+                  </button>
+                </div>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filteredStatisticsRows; track row.coffeeShop) {
+            <tr>
+              <td class="coffee-col">{{ row.coffeeShop }}</td>
+              <td class="td-srspch">
+                @if (isEditingSrspch(row)) {
+                  <div class="srspch-edit">
+                    <input
+                      type="number"
+                      min="0"
+                      class="srspch-input"
+                      [ngModel]="editingSrspchValue"
+                      (ngModelChange)="editingSrspchValue = $event"
+                      (keydown.enter)="saveSrspch(row)"
+                      (keydown.escape)="cancelEditSrspch()"
+                      (blur)="saveSrspch(row)"
+                      [disabled]="savingSrspch"
+                    />
+                    @if (srspchError) {
+                      <span class="srspch-error">{{ srspchError }}</span>
+                    }
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    class="srspch-value-btn"
+                    [class.srspch-value-btn--disabled]="!canEditSrspch(row)"
+                    [title]="canEditSrspch(row) ? 'Нажмите для редактирования' : ''"
+                    (click)="canEditSrspch(row) && startEditSrspch(row)"
+                  >
+                    {{ row.averageHeadcount }}
+                  </button>
+                }
+              </td>
+              <td>{{ row.activeEmployees }}</td>
+              <td>{{ row.dismissed }}</td>
+              <td>{{ row.hired }}</td>
+              <td>{{ row.demand }}</td>
+              <td>{{ row.demandFromAvg }}%</td>
+              <td>{{ row.turnoverRate }}%</td>
+              <td>{{ row.dismissedUpTo2Weeks }}</td>
+              <td>{{ row.dismissedUpTo1Month }}</td>
+              <td>{{ row.dismissedDuringAdaptation }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="11" class="empty">Нет данных для отображения</td>
+            </tr>
+          }
+          <tr class="total-row">
+            <td class="coffee-col">ИТОГО</td>
+            <td>{{ tableTotal('averageHeadcount') }}</td>
+            <td>{{ tableTotal('activeEmployees') }}</td>
+            <td>{{ tableTotal('dismissed') }}</td>
+            <td>{{ tableTotal('hired') }}</td>
+            <td>{{ tableTotal('demand') }}</td>
+            <td>{{ tableTotal('demandFromAvg') }}%</td>
+            <td>{{ tableTotal('turnoverRate') }}%</td>
+            <td>{{ tableTotal('dismissedUpTo2Weeks') }}</td>
+            <td>{{ tableTotal('dismissedUpTo1Month') }}</td>
+            <td>{{ tableTotal('dismissedDuringAdaptation') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Потребность</h3>
+        <button type="button" class="detail-btn">Изучить детальнее</button>
+      </div>
+      <div class="bar-chart">
+        <div class="bar-chart__yaxis">
+          @for (tick of getYTicks(chart1); track tick) {
+            <span class="y-tick">{{ tick }}</span>
+          }
+        </div>
+        <div class="bar-chart__viewport">
+          <div class="bar-chart__area" [style.--bars-count]="chart1.length">
+            <div class="bar-chart__grid">
+              @for (tick of getYTicks(chart1); track tick) {
+                <div class="grid-line"></div>
+              }
+            </div>
+            <div class="bar-chart__bars">
+              @for (item of chart1; track item.label) {
+                <div class="bar-group">
+                  <div
+                    class="bar bar--gray"
+                    [style.height.px]="barPx(item.value, chart1)"
+                    (mouseenter)="showBarTooltip('chart1', item, 'Потребность', $event)"
+                    (mouseleave)="hideBarTooltip('chart1', item.label)"
+                  ></div>
+                  <span class="bar-label">{{ item.label }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Потребность от СрСпч</h3>
+        <button type="button" class="detail-btn">Изучить детальнее</button>
+      </div>
+      <div class="bar-chart">
+        <div class="bar-chart__yaxis">
+          @for (tick of getYTicks(chart2); track tick) {
+            <span class="y-tick">{{ tick }}</span>
+          }
+        </div>
+        <div class="bar-chart__viewport">
+          <div class="bar-chart__area" [style.--bars-count]="chart2.length">
+            <div class="bar-chart__grid">
+              @for (tick of getYTicks(chart2); track tick) {
+                <div class="grid-line"></div>
+              }
+            </div>
+            <div class="bar-chart__bars">
+              @for (item of chart2; track item.label) {
+                <div class="bar-group">
+                  <div
+                    class="bar bar--indigo"
+                    [style.height.px]="barPx(item.value, chart2)"
+                    (mouseenter)="showBarTooltip('chart2', item, 'Потребность от СрСпч', $event)"
+                    (mouseleave)="hideBarTooltip('chart2', item.label)"
+                  ></div>
+                  <span class="bar-label">{{ item.label }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Коэффициент текучки</h3>
+        <button type="button" class="detail-btn">Изучить детальнее</button>
+      </div>
+      <div class="bar-chart">
+        <div class="bar-chart__yaxis">
+          @for (tick of getYTicks(chart3); track tick) {
+            <span class="y-tick">{{ tick }}</span>
+          }
+        </div>
+        <div class="bar-chart__viewport">
+          <div class="bar-chart__area" [style.--bars-count]="chart3.length">
+            <div class="bar-chart__grid">
+              @for (tick of getYTicks(chart3); track tick) {
+                <div class="grid-line"></div>
+              }
+            </div>
+            <div class="bar-chart__bars">
+              @for (item of chart3; track item.label) {
+                <div class="bar-group">
+                  <div
+                    class="bar bar--sky"
+                    [style.height.px]="barPx(item.value, chart3)"
+                    (mouseenter)="showBarTooltip('chart3', item, 'Коэффициент текучки', $event)"
+                    (mouseleave)="hideBarTooltip('chart3', item.label)"
+                  ></div>
+                  <span class="bar-label">{{ item.label }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Уволено человек</h3>
+        <button type="button" class="detail-btn">Изучить детальнее</button>
+      </div>
+
+      <div class="donut-wrapper">
+        <div class="donut-container">
+          <svg width="200" height="200" viewBox="0 0 120 120">
+            @for (seg of donutSegments; let i = $index; track seg.label) {
+              <circle
+                cx="60"
+                cy="60"
+                r="48"
+                fill="none"
+                [attr.stroke]="seg.color"
+                stroke-width="20"
+                [attr.stroke-dasharray]="dasharray(seg.value)"
+                [attr.stroke-dashoffset]="dashoffset(i)"
+              />
+            }
+            <text x="60" y="64" text-anchor="middle" class="donut-center-text">
+              {{ donutTotal }}
+            </text>
+          </svg>
+
+          <span class="donut-num donut-num--top">{{ donutSegments[0].value }}</span>
+          <span class="donut-num donut-num--right">{{ donutSegments[1].value }}</span>
+          <span class="donut-num donut-num--bottom">{{ donutSegments[2].value }}</span>
+          <span class="donut-num donut-num--left">{{ donutSegments[3].value }}</span>
+        </div>
+
+        <div class="donut-legend">
+          @for (seg of donutSegments; track seg.label) {
+            <div class="legend-item">
+              <span
+                class="legend-dot"
+                [style.background]="seg.color"
+                [style.box-shadow]="seg.color === '#E8E3D8' ? 'inset 0 0 0 1px #ccc' : 'none'"
+              ></span>
+              <span class="legend-label">{{ seg.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (hoveredBar) {
+    <div class="bar-tooltip bar-tooltip--floating" [style.left.px]="hoveredBar.x" [style.top.px]="hoveredBar.y">
+      <span class="bar-tooltip__title">{{ hoveredBar.label }}</span>
+      <span class="bar-tooltip__value">{{ hoveredBar.value }}</span>
+      <span class="bar-tooltip__metric">{{ hoveredBar.metric }}</span>
+    </div>
+  }
+</div>

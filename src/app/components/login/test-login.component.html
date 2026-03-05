@@ -63,14 +63,14 @@
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           <div class="form-group">
             <input 
-              type="email" 
-              formControlName="email"
+              type="text" 
+              formControlName="login"
               class="form-control"
-              placeholder="Email"
-              [class.error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+              placeholder="Логин"
+              [class.error]="loginForm.get('login')?.invalid && loginForm.get('login')?.touched"
             />
-            <div class="error-message" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
-              Введите корректный email
+            <div class="error-message" *ngIf="loginForm.get('login')?.invalid && loginForm.get('login')?.touched">
+              Введите логин
             </div>
           </div>
 

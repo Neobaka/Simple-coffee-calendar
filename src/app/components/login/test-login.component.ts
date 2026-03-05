@@ -26,14 +26,14 @@ export class TestLoginComponent {
 
   constructor() {
     this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
+      login: ['', [Validators.required]],
       password: ['', [Validators.required]]
     });
   }
 
   loginAsAdmin(): void {
     this.loginForm.patchValue({
-      email: 'admin@simplecoffee.ru',
+      login: 'admin',
       password: 'admin123'
     });
     this.onSubmit();
@@ -45,9 +45,9 @@ export class TestLoginComponent {
       this.errorMessage = '';
       this.successMessage = '';
 
-      const { email, password } = this.loginForm.value;
+      const { login, password } = this.loginForm.value;
 
-      this.authService.login(email, password).subscribe({
+      this.authService.login(login, password).subscribe({
         next: (response) => {
           if (response.success && response.data && response.data.user) {
             const userName = response.data.user.fullName || response.data.user.email;
@@ -57,8 +57,8 @@ export class TestLoginComponent {
             const userRole = response.data.user.role;
             let redirectUrl: string;
             
-            if (userRole === 'admin' || userRole === 'manager') {
-              redirectUrl = '/admin-schedule';
+            if (userRole === 'admin' || userRole === 'manager' || userRole === 'supervisor') {
+              redirectUrl = '/checklists/statistics';
             } else if (userRole === 'barista') {
               redirectUrl = '/person-schedule';
             } else {
@@ -81,7 +81,7 @@ export class TestLoginComponent {
           this.isLoading = false;
           
           if (error.status === 401) {
-            this.errorMessage = 'Неверный email или пароль';
+            this.errorMessage = 'Неверный логин или пароль';
           } else if (error.status === 0) {
             this.errorMessage = 'Не удается подключиться к серверу';
           } else {

@@ -1,0 +1,427 @@
+openapi: 3.0.0
+info:
+  title: Barista Scheduling API
+  description: API для управления расписанием бариста, кофейнями, сменами, пожеланиями, штрафами и статистикой.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Основной сервер
+tags:
+  - name: Authentication
+    description: Вход, выход и получение информации о текущем пользователе
+  - name: Users
+    description: Управление пользователями (требуется роль 'admin')
+  - name: Coffee Shops
+    description: Управление кофейнями (требуется роль 'admin')
+  - name: Shifts
+    description: Управление сменами (автоматическая публикация)
+  - name: Wishes
+    description: Управление пожеланиями бариста и их подтверждение менеджером
+  - name: Penalties
+    description: Наложение и управление штрафами (Admin/Manager)
+  - name: Statistics
+    description: Получение сводной статистики и экспорт отчетов
+
+paths:
+# --------------------
+# AUTH ROUTES
+# --------------------
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Вход пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email, example: "manager@shop.com" }
+                password: { type: string, format: password, example: "password" }
+              required: [email, password]
+      responses:
+        '200':
+          description: Успешный вход
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Обновление токена доступа
+      responses:
+        '200':
+          description: Токен успешно обновлен
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Выход пользователя
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204':
+          description: Успешный выход
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Получение информации о текущем пользователе
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Информация о пользователе
+
+# --------------------
+# USER ROUTES
+# --------------------
+  /users:
+    get:
+      tags: [Users]
+      summary: Список пользователей (Admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+        - name: coffeeShop
+          in: query
+          schema: { type: string, format: 'ObjectId' }
+      responses:
+        '200':
+          description: Список пользователей
+    post:
+      tags: [Users]
+      summary: Создать пользователя (Admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Пользователь создан
+
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: 'ObjectId' }
+    get:
+      tags: [Users]
+      summary: Получить пользователя по ID
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Данные пользователя
+    put:
+      tags: [Users]
+      summary: Обновить пользователя (Admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Обновлено
+    delete:
+      tags: [Users]
+      summary: Деактивировать пользователя (Admin)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204':
+          description: Деактивирован
+
+# --------------------
+# COFFEE SHOP ROUTES
+# --------------------
+  /coffee-shops:
+    get:
+      tags: [Coffee Shops]
+      summary: Список кофеен
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Список кофеен
+    post:
+      tags: [Coffee Shops]
+      summary: Создать кофейню (Admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoffeeShopCreate'
+      responses:
+        '201':
+          description: Создано
+
+  /coffee-shops/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: 'ObjectId' }
+    put:
+      tags: [Coffee Shops]
+      summary: Обновить кофейню (Admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoffeeShopUpdate'
+      responses:
+        '200':
+          description: Обновлено
+
+# --------------------
+# SHIFT ROUTES
+# --------------------
+  /shifts:
+    get:
+      tags: [Shifts]
+      summary: Список смен с фильтрацией
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: coffeeShop
+          in: query
+          schema: { type: string, format: 'ObjectId' }
+        - name: user
+          in: query
+          schema: { type: string, format: 'ObjectId' }
+        - name: dateFrom
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Список смен
+    post:
+      tags: [Shifts]
+      summary: Создание смены вручную (Admin, Manager)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftCreate'
+      responses:
+        '201':
+          description: Смена создана
+
+  /shifts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: 'ObjectId' }
+    delete:
+      tags: [Shifts]
+      summary: Удаление смены (Admin, Manager)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204':
+          description: Удалено
+
+# --------------------
+# WISH ROUTES
+# --------------------
+  /wishes:
+    get:
+      tags: [Wishes]
+      summary: Список пожеланий
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: coffeeShop
+          in: query
+          schema: { type: string, format: 'ObjectId' }
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, approved, rejected] }
+      responses:
+        '200':
+          description: Список пожеланий
+    post:
+      tags: [Wishes]
+      summary: Создать пожелание (Barista)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WishCreate'
+      responses:
+        '201':
+          description: Создано
+
+  /wishes/{id}/status:
+    patch:
+      tags: [Wishes]
+      summary: Одобрить/отклонить пожелание (Manager, Admin)
+      description: При одобрении автоматически создается или корректируется смена.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: 'ObjectId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [approved, rejected] }
+      responses:
+        '200':
+          description: Статус обновлен
+
+  /wishes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: 'ObjectId' }
+    delete:
+      tags: [Wishes]
+      summary: Удалить свое пожелание (Barista)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204':
+          description: Удалено
+
+# --------------------
+# PENALTY ROUTES
+# --------------------
+  /penalties:
+    get:
+      tags: [Penalties]
+      summary: Список штрафов
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Список штрафов
+    post:
+      tags: [Penalties]
+      summary: Выписать штраф (Admin, Manager)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenaltyCreate'
+      responses:
+        '201':
+          description: Штраф создан
+
+# --------------------
+# STATS ROUTES
+# --------------------
+  /stats/dashboard-summary:
+    get:
+      tags: [Statistics]
+      summary: Сводка для дашборда кофейни
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: dateFrom
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: dateTo
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Данные статистики
+
+# --------------------
+# COMPONENTS
+# --------------------
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserCreate:
+      type: object
+      required: [email, password, fullName, role, coffeeShop, hourlyRate]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password, minLength: 6 }
+        fullName: { type: string }
+        role: { type: string, enum: [barista, manager, admin] }
+        coffeeShop: { type: string, format: 'ObjectId' }
+        hourlyRate: { type: number, minimum: 0 }
+
+    UserUpdate:
+      type: object
+      properties:
+        fullName: { type: string }
+        hourlyRate: { type: number }
+        isActive: { type: boolean }
+
+    CoffeeShopCreate:
+      type: object
+      required: [name, address, phone]
+      properties:
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string }
+        openTime: { type: string, example: "08:00" }
+        closeTime: { type: string, example: "22:00" }
+        maxBaristasPerShift: { type: integer, default: 2 }
+
+    CoffeeShopUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        maxBaristasPerShift: { type: integer }
+
+    ShiftCreate:
+      type: object
+      required: [user, coffeeShop, date, type, hourlyRate]
+      properties:
+        user: { type: string, format: 'ObjectId' }
+        coffeeShop: { type: string, format: 'ObjectId' }
+        date: { type: string, format: date }
+        type: { type: string, enum: [work, sick_leave, vacation, day_off] }
+        startTime: { type: string, pattern: '^\\d{2}:\\d{2}$' }
+        endTime: { type: string, pattern: '^\\d{2}:\\d{2}$' }
+        hourlyRate: { type: number }
+        comment: { type: string }
+
+    WishCreate:
+      type: object
+      required: [date, type]
+      properties:
+        date: { type: string, format: date }
+        type: { type: string, enum: [work, sick_leave, vacation, day_off, swap] }
+        startTime: { type: string, pattern: '^\\d{2}:\\d{2}$' }
+        endTime: { type: string, pattern: '^\\d{2}:\\d{2}$' }
+        comment: { type: string }
+        swapWithUser: { type: string, format: 'ObjectId', description: "ID бариста для обмена" }
+
+    PenaltyCreate:
+      type: object
+      required: [user, coffeeShop, amount, reason, date]
+      properties:
+        user: { type: string, format: 'ObjectId' }
+        coffeeShop: { type: string, format: 'ObjectId' }
+        amount: { type: number, minimum: 0 }
+        reason: { type: string }
+        date: { type: string, format: date }

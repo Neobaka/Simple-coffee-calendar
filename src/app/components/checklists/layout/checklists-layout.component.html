@@ -1,0 +1,120 @@
+<div class="layout" [class.layout--collapsed]="isCollapsed()">
+
+  <!-- ───── Sidebar ───── -->
+  <aside class="sidebar" [class.sidebar--collapsed]="isCollapsed()">
+
+    <!-- User block + collapse toggle on same row -->
+    <div class="sidebar__user">
+      <div class="user-avatar">{{ userInitials }}</div>
+      @if (!isCollapsed()) {
+        <div class="user-info">
+          <span class="user-role">{{ userRoleLabel }}</span>
+          <span class="user-name">{{ currentUser?.fullName }}</span>
+        </div>
+      }
+    </div>
+    <button type="button" class="sidebar__toggle" (click)="toggleSidebar()">
+      <tui-icon [icon]="isCollapsed() ? '@tui.chevron-right' : '@tui.chevron-left'" />
+    </button>
+
+    <!-- Navigation -->
+    <nav class="sidebar__nav">
+      @for (item of navItems; track item.route) {
+        <a
+          [routerLink]="item.route"
+          [class.nav-item--active]="isNavItemActive(item)"
+          class="nav-item"
+          [title]="isCollapsed() ? item.label : ''"
+        >
+          <tui-icon [icon]="item.icon" class="nav-item__icon" />
+          @if (!isCollapsed()) {
+            <span class="nav-item__label">{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <!-- Bottom actions -->
+    <div class="sidebar__bottom">
+      <button
+        type="button"
+        class="nav-item"
+        [title]="isCollapsed() ? 'Уведомления' : ''"
+      >
+        <tui-icon icon="@tui.bell" class="nav-item__icon" />
+        @if (!isCollapsed()) {
+          <span class="nav-item__label">Уведомления</span>
+        }
+      </button>
+
+      <button
+        type="button"
+        class="nav-item nav-item--logout"
+        (click)="logout()"
+        [title]="isCollapsed() ? 'Выйти из аккаунта' : ''"
+      >
+        <tui-icon icon="@tui.log-out" class="nav-item__icon" />
+        @if (!isCollapsed()) {
+          <span class="nav-item__label">Выйти из аккаунта</span>
+        }
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ───── Main area ───── -->
+  <div class="main-wrapper">
+
+    <!-- Top header -->
+    <header class="main-header">
+      <div class="header-left">
+        <nav class="header-tabs">
+          @if (isPersonnelTabsMode) {
+            <a
+              routerLink="/checklists/personnel"
+              routerLinkActive="tab--active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="tab"
+            >
+              Сотрудники
+            </a>
+            <a routerLink="/checklists/medical" routerLinkActive="tab--active" class="tab">Медосмотр</a>
+          } @else {
+            <a routerLink="/checklists/statistics" routerLinkActive="tab--active" class="tab">Статистика</a>
+            @if (showChecklistsTab) {
+              <a routerLink="/checklists/forms" routerLinkActive="tab--active" class="tab">Чек-листы</a>
+            }
+          }
+        </nav>
+      </div>
+
+      @if (!isPersonnelTabsMode) {
+        <div
+          class="header-period-trigger"
+          [tuiDropdown]="calendarDropdown"
+          [(tuiDropdownOpen)]="calendarOpen"
+          (click)="$event.stopPropagation()"
+        >
+          <tui-icon icon="@tui.calendar" class="date-icon" />
+          <span class="date-label">Данные за период</span>
+          <span class="period-value">{{ periodDisplay() }}</span>
+          <tui-icon icon="@tui.chevron-down" class="period-chevron" />
+        </div>
+        <ng-template #calendarDropdown>
+          <div class="calendar-dropdown" (click)="$event.stopPropagation()">
+            <tui-calendar-range
+              [(value)]="range"
+              (valueChange)="onRangeChange($event)"
+            />
+          </div>
+        </ng-template>
+      }
+    </header>
+
+    <!-- Page content -->
+    <main class="main-content">
+      <router-outlet />
+    </main>
+
+  </div>
+</div>

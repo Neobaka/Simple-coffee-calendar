@@ -9,7 +9,7 @@ export interface User {
   _id?: string; // Для совместимости с MongoDB
   email: string;
   fullName: string;
-  role: 'barista' | 'manager' | 'admin';
+  role: 'barista' | 'manager' | 'supervisor' | 'admin';
   coffeeShop?: any;
   hourlyRate?: number;
   isActive?: boolean;
@@ -28,7 +28,7 @@ export interface AuthResponse {
 }
 
 export interface LoginRequest {
-  email: string;
+  login: string;
   password: string;
 }
 
@@ -89,9 +89,9 @@ export class AuthService {
     );
   }
 
-  login(email: string, password: string): Observable<AuthResponse> {
+  login(login: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, {
-      email,
+      login,
       password
     }).pipe(
       tap(response => {
@@ -222,7 +222,7 @@ export class AuthService {
   }
 
   isManagerOrAdmin(): boolean {
-    return this.hasRole(['manager', 'admin']);
+    return this.hasRole(['manager', 'supervisor', 'admin']);
   }
 
   isBarista(): boolean {

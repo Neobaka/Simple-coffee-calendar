@@ -38,6 +38,8 @@ export interface CoffeeShopUpdate {
   closeTime?: string;
   timezone?: string;
   maxBaristasPerShift?: number;
+  /** СРСПЧ (ручной ввод, хранится в БД кофейни) */
+  srspch?: number;
 }
 
 export interface CoffeeShopsListResponse {

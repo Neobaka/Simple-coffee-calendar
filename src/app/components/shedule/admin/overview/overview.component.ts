@@ -1,10 +1,12 @@
 // src/app/components/overview/overview.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { AuthService, User } from '../../../../services/auth.service';
+import { TuiDropdown, TuiButton, TuiIcon, TuiLoader } from '@taiga-ui/core';
 
 interface CoffeeShopStats {
   _id: string;
@@ -39,13 +41,33 @@ interface CoffeeShop {
 @Component({
   selector: 'app-overview',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, RouterLinkActive, ...TuiDropdown, TuiButton, TuiIcon, TuiLoader],
   templateUrl: './overview.component.html',
   styleUrls: ['./overview.component.scss']
 })
 export class OverviewComponent implements OnInit {
   private router = inject(Router);
   private http = inject(HttpClient);
+  private authService = inject(AuthService);
+
+  userMenuOpen = false;
+  currentUser: User | null = null;
+
+  get userRoleLabel(): string {
+    const u = this.currentUser;
+    if (!u?.role) return '';
+    return u.role === 'admin' ? 'Администратор' : u.role === 'manager' ? 'Управляющий' : 'Бариста';
+  }
+  get userBranchName(): string {
+    const u = this.currentUser;
+    if (!u?.coffeeShop) return '—';
+    return typeof u.coffeeShop === 'object' && (u.coffeeShop as any)?.name != null
+      ? (u.coffeeShop as any).name
+      : String(u.coffeeShop);
+  }
+  get userStatusLabel(): string {
+    return this.currentUser?.isActive !== false ? 'Активный' : 'Неактивный';
+  }
 
   // Данные для отображения
   totalShops = 0;
@@ -63,6 +85,8 @@ export class OverviewComponent implements OnInit {
   USE_MOCK_DATA = false;
 
   ngOnInit() {
+    this.currentUser = this.authService.getCurrentUserValue();
+    this.authService.currentUser$.subscribe((u) => (this.currentUser = u));
     if (this.USE_MOCK_DATA) {
       this.loadMockData();
     } else {

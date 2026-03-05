@@ -3,6 +3,7 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
+  HostListener,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -194,6 +195,15 @@ export class ChecklistsPersonnelComponent implements OnInit, AfterViewInit, OnDe
     this.observeAnchor(ref);
   }
 
+  @ViewChild('tableCard')
+  tableCard?: ElementRef<HTMLDivElement>;
+
+  @ViewChild('bottomScroller')
+  bottomScroller?: ElementRef<HTMLDivElement>;
+
+  tableHasHorizontalScroll = false;
+  tableScrollWidth = 0;
+
   readonly roleOptions: { value: PersonnelRole; label: string }[] = [
     { value: 'trainee', label: 'Стажер' },
     { value: 'barista', label: 'Бариста' },
@@ -214,10 +224,16 @@ export class ChecklistsPersonnelComponent implements OnInit, AfterViewInit, OnDe
 
   ngAfterViewInit(): void {
     this.setupObserver();
+    this.updateHorizontalScrollState();
   }
 
   ngOnDestroy(): void {
     this.observer?.disconnect();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateHorizontalScrollState();
   }
 
   get filteredRows(): EmployeeRow[] {
@@ -610,6 +626,7 @@ export class ChecklistsPersonnelComponent implements OnInit, AfterViewInit, OnDe
   loadMoreRows(): void {
     const nextCount = this.visibleRowsCount + this.lazyStep;
     this.visibleRowsCount = Math.min(nextCount, this.filteredRows.length);
+    this.updateHorizontalScrollState();
   }
 
   private loadData(): void {
@@ -629,6 +646,7 @@ export class ChecklistsPersonnelComponent implements OnInit, AfterViewInit, OnDe
         this.selectAllCoffees();
         this.visibleRowsCount = this.lazyStep;
         this.isLoading = false;
+        setTimeout(() => this.updateHorizontalScrollState());
       },
       error: () => {
         this.error = 'Не удалось загрузить сотрудников';
@@ -636,6 +654,7 @@ export class ChecklistsPersonnelComponent implements OnInit, AfterViewInit, OnDe
         this.coffeeShopOptions = [];
         this.visibleRowsCount = this.lazyStep;
         this.isLoading = false;
+        setTimeout(() => this.updateHorizontalScrollState());
       },
     });
   }
@@ -769,6 +788,45 @@ export class ChecklistsPersonnelComponent implements OnInit, AfterViewInit, OnDe
     // ISO или другой формат
     const parsed = new Date(trimmed);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  onTableScroll(): void {
+    const tableCardEl = this.tableCard?.nativeElement;
+    const bottomEl = this.bottomScroller?.nativeElement;
+    if (!tableCardEl || !bottomEl) {
+      return;
+    }
+    if (Math.abs(bottomEl.scrollLeft - tableCardEl.scrollLeft) > 1) {
+      bottomEl.scrollLeft = tableCardEl.scrollLeft;
+    }
+  }
+
+  onBottomScroll(): void {
+    const tableCardEl = this.tableCard?.nativeElement;
+    const bottomEl = this.bottomScroller?.nativeElement;
+    if (!tableCardEl || !bottomEl) {
+      return;
+    }
+    if (Math.abs(tableCardEl.scrollLeft - bottomEl.scrollLeft) > 1) {
+      tableCardEl.scrollLeft = bottomEl.scrollLeft;
+    }
+  }
+
+  private updateHorizontalScrollState(): void {
+    const tableCardEl = this.tableCard?.nativeElement;
+    if (!tableCardEl) {
+      this.tableHasHorizontalScroll = false;
+      this.tableScrollWidth = 0;
+      return;
+    }
+
+    this.tableScrollWidth = tableCardEl.scrollWidth;
+    this.tableHasHorizontalScroll = tableCardEl.scrollWidth > tableCardEl.clientWidth + 1;
+
+    const bottomEl = this.bottomScroller?.nativeElement;
+    if (bottomEl) {
+      bottomEl.scrollLeft = tableCardEl.scrollLeft;
+    }
   }
 }
 

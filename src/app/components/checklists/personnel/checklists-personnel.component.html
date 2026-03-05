@@ -122,7 +122,7 @@
   @if (isLoading) {
     <div class="state">Загрузка сотрудников...</div>
   } @else {
-    <div class="table-card">
+    <div class="table-card" #tableCard (scroll)="onTableScroll()">
       <table class="personnel-table">
         <thead>
           <tr>
@@ -171,6 +171,14 @@
         </tbody>
       </table>
     </div>
+
+    @if (tableHasHorizontalScroll) {
+      <div class="personnel-horizontal-scroll">
+        <div class="personnel-horizontal-scroll__inner" #bottomScroller (scroll)="onBottomScroll()">
+          <div class="personnel-horizontal-scroll__spacer" [style.width.px]="tableScrollWidth"></div>
+        </div>
+      </div>
+    }
 
     @if (hiddenRowsCount > 0) {
       <div class="lazy-load" #loadMoreAnchor>

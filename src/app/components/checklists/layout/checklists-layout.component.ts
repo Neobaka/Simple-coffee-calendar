@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -27,15 +27,14 @@ export class ChecklistsLayoutComponent implements OnInit {
   periodService = inject(ChecklistPeriodService);
 
   isCollapsed = signal(false);
-  /** Временно скрыть вкладку «Чек-листы» на странице статистики */
   showChecklistsTab = false;
   currentUser: User | null = null;
   calendarOpen = false;
-  range: TuiDayRange | null = null;
+  readonly range = signal<TuiDayRange | null>(null);
 
   readonly navItems: NavItem[] = [
-    { label: 'Статистика', icon: '@tui.bar-chart-2', route: '/checklists/statistics' },
-    { label: 'Персонал', icon: '@tui.users', route: '/checklists/personnel' },
+    { label: '\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430', icon: '@tui.bar-chart-2', route: '/checklists/statistics' },
+    { label: '\u041f\u0435\u0440\u0441\u043e\u043d\u0430\u043b', icon: '@tui.users', route: '/checklists/personnel' },
   ];
 
   get userInitials(): string {
@@ -46,21 +45,22 @@ export class ChecklistsLayoutComponent implements OnInit {
         .slice(0, 2)
         .map((p) => p[0] ?? '')
         .join('')
-        .toUpperCase() || 'АД'
+        .toUpperCase() || '\u0410\u0414'
     );
   }
 
   get userRoleLabel(): string {
     const role = this.currentUser?.role;
-    if (role === 'admin') return 'Администратор';
-    if (role === 'manager') return 'Управляющий';
-    return 'Бариста';
+    if (role === 'admin') return '\u0410\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440';
+    if (role === 'manager') return '\u0423\u043f\u0440\u0430\u0432\u043b\u044f\u044e\u0449\u0438\u0439';
+    return '\u0411\u0430\u0440\u0438\u0441\u0442\u0430';
   }
 
   get isPersonnelTabsMode(): boolean {
     return (
       this.router.url.startsWith('/checklists/personnel') ||
-      this.router.url.startsWith('/checklists/medical')
+      this.router.url.startsWith('/checklists/medical') ||
+      this.router.url.startsWith('/checklists/vacancies')
     );
   }
 
@@ -71,11 +71,11 @@ export class ChecklistsLayoutComponent implements OnInit {
     return this.router.url.startsWith(item.route);
   }
 
-  periodDisplay = computed(() => {
-    const r = this.range;
+  periodDisplay(): string {
+    const r = this.range();
     if (!r) return 'с — по —';
     return `с ${this.formatDay(r.from)} по ${this.formatDay(r.to)}`;
-  });
+  }
 
   private formatDay(d: TuiDay): string {
     const day = String(d.day).padStart(2, '0');
@@ -91,14 +91,14 @@ export class ChecklistsLayoutComponent implements OnInit {
 
   private syncRangeFromPeriod(): void {
     const p = this.periodService.getPeriod();
-    this.range = new TuiDayRange(
+    this.range.set(new TuiDayRange(
       TuiDay.jsonParse(p.dateFrom),
       TuiDay.jsonParse(p.dateTo)
-    );
+    ));
   }
 
   onRangeChange(value: TuiDayRange | null): void {
-    this.range = value;
+    this.range.set(value);
     if (value) {
       this.periodService.setPeriod(value.from.toJSON(), value.to.toJSON());
       this.calendarOpen = false;

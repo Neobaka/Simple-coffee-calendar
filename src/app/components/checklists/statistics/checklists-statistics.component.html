@@ -82,7 +82,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of filteredStatisticsRows; track row.coffeeShop) {
+          @for (row of filteredStatisticsRows; track row.coffeeShopId ?? (row.coffeeShop + '_' + $index)) {
             <tr>
               <td class="coffee-col">{{ row.coffeeShop }}</td>
               <td class="td-srspch">
@@ -168,13 +168,13 @@
               }
             </div>
             <div class="bar-chart__bars">
-              @for (item of chart1; track item.label) {
+              @for (item of chart1; track item.id) {
                 <div class="bar-group">
                   <div
                     class="bar bar--gray"
                     [style.height.px]="barPx(item.value, chart1)"
                     (mouseenter)="showBarTooltip('chart1', item, 'Потребность', $event)"
-                    (mouseleave)="hideBarTooltip('chart1', item.label)"
+                    (mouseleave)="hideBarTooltip('chart1', item.id)"
                   ></div>
                   <span class="bar-label">{{ item.label }}</span>
                 </div>
@@ -204,13 +204,13 @@
               }
             </div>
             <div class="bar-chart__bars">
-              @for (item of chart2; track item.label) {
+              @for (item of chart2; track item.id) {
                 <div class="bar-group">
                   <div
                     class="bar bar--indigo"
                     [style.height.px]="barPx(item.value, chart2)"
                     (mouseenter)="showBarTooltip('chart2', item, 'Потребность от СрСпч', $event)"
-                    (mouseleave)="hideBarTooltip('chart2', item.label)"
+                    (mouseleave)="hideBarTooltip('chart2', item.id)"
                   ></div>
                   <span class="bar-label">{{ item.label }}</span>
                 </div>
@@ -240,13 +240,13 @@
               }
             </div>
             <div class="bar-chart__bars">
-              @for (item of chart3; track item.label) {
+              @for (item of chart3; track item.id) {
                 <div class="bar-group">
                   <div
                     class="bar bar--sky"
                     [style.height.px]="barPx(item.value, chart3)"
                     (mouseenter)="showBarTooltip('chart3', item, 'Коэффициент текучки', $event)"
-                    (mouseleave)="hideBarTooltip('chart3', item.label)"
+                    (mouseleave)="hideBarTooltip('chart3', item.id)"
                   ></div>
                   <span class="bar-label">{{ item.label }}</span>
                 </div>

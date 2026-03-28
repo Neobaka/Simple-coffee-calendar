@@ -8,6 +8,7 @@ import { ChecklistPeriodService } from '../../../services/checklist-period.servi
 import { CoffeeShopService } from '../../../services/coffee-shop.service';
 
 interface BarItem {
+  id: string;
   label: string;
   value: number;
 }
@@ -72,7 +73,7 @@ export class ChecklistsStatisticsComponent implements OnInit {
   private readonly apiUrl = `${environment.apiUrl}/users/staff-summary`;
 
   searchQuery = '';
-  hoveredBar: { chart: string; label: string; value: number; metric: string; x: number; y: number } | null = null;
+  hoveredBar: { chart: string; id: string; label: string; value: number; metric: string; x: number; y: number } | null = null;
   selectedCoffeeShops: string[] = [];
   coffeeDropdownOpen = false;
   sortKey: StatisticsColumnKey | null = null;
@@ -233,17 +234,17 @@ export class ChecklistsStatisticsComponent implements OnInit {
     const x = rect ? rect.left + rect.width / 2 : event.clientX;
     const y = rect ? rect.top - 8 : event.clientY - 8;
 
-    this.hoveredBar = { chart, label: item.label, value: item.value, metric, x, y };
+    this.hoveredBar = { chart, id: item.id, label: item.label, value: item.value, metric, x, y };
   }
 
-  hideBarTooltip(chart: string, label: string): void {
-    if (this.hoveredBar?.chart === chart && this.hoveredBar.label === label) {
+  hideBarTooltip(chart: string, id: string): void {
+    if (this.hoveredBar?.chart === chart && this.hoveredBar.id === id) {
       this.hoveredBar = null;
     }
   }
 
-  isBarHovered(chart: string, label: string): boolean {
-    return this.hoveredBar?.chart === chart && this.hoveredBar.label === label;
+  isBarHovered(chart: string, id: string): boolean {
+    return this.hoveredBar?.chart === chart && this.hoveredBar.id === id;
   }
 
   tableTotal<K extends keyof StatisticsTableRow>(key: K): number {
@@ -371,9 +372,21 @@ export class ChecklistsStatisticsComponent implements OnInit {
   private refreshChartsAndDonut(): void {
     const rows = this.filteredStatisticsRows;
 
-    this.chart1 = rows.map((row) => ({ label: row.coffeeShop, value: row.demand }));
-    this.chart2 = rows.map((row) => ({ label: row.coffeeShop, value: row.demandFromAvg }));
-    this.chart3 = rows.map((row) => ({ label: row.coffeeShop, value: row.turnoverRate }));
+    this.chart1 = rows.map((row, index) => ({
+      id: row.coffeeShopId ?? `${row.coffeeShop}-${index}`,
+      label: row.coffeeShop,
+      value: row.demand,
+    }));
+    this.chart2 = rows.map((row, index) => ({
+      id: row.coffeeShopId ?? `${row.coffeeShop}-${index}`,
+      label: row.coffeeShop,
+      value: row.demandFromAvg,
+    }));
+    this.chart3 = rows.map((row, index) => ({
+      id: row.coffeeShopId ?? `${row.coffeeShop}-${index}`,
+      label: row.coffeeShop,
+      value: row.turnoverRate,
+    }));
 
     const palette = ['#E8E3D8', '#C8BAA5', '#3A3730', '#9E9E9E'];
     const topDismissed = [...rows]
@@ -403,7 +416,14 @@ export class ChecklistsStatisticsComponent implements OnInit {
   }
 
   private toNumber(value: unknown): number {
-    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : 0;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value.replace(',', '.').trim());
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
   }
 
   /** YYYY-MM-DD -> ISO date-time (start or end of day UTC) */

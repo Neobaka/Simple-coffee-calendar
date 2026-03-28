@@ -17,6 +17,7 @@ import { ChecklistsStatisticsComponent } from './components/checklists/statistic
 import { ChecklistsFormsComponent } from './components/checklists/forms/checklists-forms.component';
 import { ChecklistsPersonnelComponent } from './components/checklists/personnel/checklists-personnel.component';
 import { ChecklistsMedicalComponent } from './components/checklists/medical/checklists-medical.component';
+import { VacanciesComponent } from './components/checklists/vacancies/vacancies.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -33,6 +34,7 @@ export const routes: Routes = [
   { path: 'coffee-shops', component: CoffeeShopsComponent, canActivate: [adminGuard] },
   { path: 'employees', component: EmployeesComponent, canActivate: [adminGuard] },
   { path: 'admin-schedule', component: AdminScheduleComponent, canActivate: [adminGuard] },
+  { path: 'vacancies', redirectTo: '/checklists/vacancies', pathMatch: 'full' },
 
   // Маршруты только для бариста
   { path: 'person-schedule', component: PersonScheduleComponent, canActivate: [baristaGuard] },
@@ -49,6 +51,7 @@ export const routes: Routes = [
       { path: 'forms', component: ChecklistsFormsComponent },
       { path: 'personnel', component: ChecklistsPersonnelComponent },
       { path: 'medical', component: ChecklistsMedicalComponent },
+      { path: 'vacancies', component: VacanciesComponent },
     ],
   },
 

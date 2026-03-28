@@ -1,9 +1,5 @@
 <div class="layout" [class.layout--collapsed]="isCollapsed()">
-
-  <!-- ───── Sidebar ───── -->
   <aside class="sidebar" [class.sidebar--collapsed]="isCollapsed()">
-
-    <!-- User block + collapse toggle on same row -->
     <div class="sidebar__user">
       <div class="user-avatar">{{ userInitials }}</div>
       @if (!isCollapsed()) {
@@ -13,11 +9,11 @@
         </div>
       }
     </div>
+
     <button type="button" class="sidebar__toggle" (click)="toggleSidebar()">
       <tui-icon [icon]="isCollapsed() ? '@tui.chevron-right' : '@tui.chevron-left'" />
     </button>
 
-    <!-- Navigation -->
     <nav class="sidebar__nav">
       @for (item of navItems; track item.route) {
         <a
@@ -34,7 +30,6 @@
       }
     </nav>
 
-    <!-- Bottom actions -->
     <div class="sidebar__bottom">
       <button
         type="button"
@@ -59,13 +54,9 @@
         }
       </button>
     </div>
-
   </aside>
 
-  <!-- ───── Main area ───── -->
   <div class="main-wrapper">
-
-    <!-- Top header -->
     <header class="main-header">
       <div class="header-left">
         <nav class="header-tabs">
@@ -79,6 +70,7 @@
               Сотрудники
             </a>
             <a routerLink="/checklists/medical" routerLinkActive="tab--active" class="tab">Медосмотр</a>
+            <a routerLink="/checklists/vacancies" routerLinkActive="tab--active" class="tab">Вакансии</a>
           } @else {
             <a routerLink="/checklists/statistics" routerLinkActive="tab--active" class="tab">Статистика</a>
             @if (showChecklistsTab) {
@@ -100,10 +92,11 @@
           <span class="period-value">{{ periodDisplay() }}</span>
           <tui-icon icon="@tui.chevron-down" class="period-chevron" />
         </div>
+
         <ng-template #calendarDropdown>
           <div class="calendar-dropdown" (click)="$event.stopPropagation()">
             <tui-calendar-range
-              [(value)]="range"
+              [value]="range()"
               (valueChange)="onRangeChange($event)"
             />
           </div>
@@ -111,10 +104,8 @@
       }
     </header>
 
-    <!-- Page content -->
     <main class="main-content">
       <router-outlet />
     </main>
-
   </div>
 </div>

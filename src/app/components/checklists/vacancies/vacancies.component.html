@@ -1,0 +1,285 @@
+<div class="vacancies-page">
+  <header class="top-tabs">
+    <button
+      type="button"
+      class="top-tab"
+      [class.active]="activeTab === 'vacancies'"
+      (click)="activeTab = 'vacancies'"
+    >
+      Вакансии
+    </button>
+    <button
+      type="button"
+      class="top-tab"
+      [class.active]="activeTab === 'archive'"
+      (click)="activeTab = 'archive'"
+    >
+      Архив вакансий
+    </button>
+    <button
+      type="button"
+      class="top-tab"
+      [class.active]="activeTab === 'workload'"
+      (click)="activeTab = 'workload'"
+    >
+      Занятость сотрудников
+    </button>
+  </header>
+
+  <section class="filters">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M7.66634 1.83337C6.9003 1.83337 6.14175 1.98426 5.43402 2.27741C4.72629 2.57056 4.08323 3.00024 3.54155 3.54192C2.99988 4.08359 2.5702 4.72665 2.27704 5.43439C1.98389 6.14212 1.83301 6.90066 1.83301 7.66671C1.83301 8.43275 1.98389 9.1913 2.27704 9.89903C2.5702 10.6068 2.99988 11.2498 3.54155 11.7915C4.08323 12.3332 4.72629 12.7629 5.43402 13.056C6.14175 13.3492 6.9003 13.5 7.66634 13.5C9.21344 13.5 10.6972 12.8855 11.7911 11.7915C12.8851 10.6975 13.4997 9.2138 13.4997 7.66671C13.4997 6.11961 12.8851 4.63588 11.7911 3.54192C10.6972 2.44796 9.21344 1.83337 7.66634 1.83337ZM0.833008 7.66671C0.833008 3.89337 3.89301 0.833374 7.66634 0.833374C11.4397 0.833374 14.4997 3.89337 14.4997 7.66671C14.4997 9.37337 13.8737 10.9347 12.839 12.132L15.0197 14.3134C15.0688 14.3591 15.1082 14.4143 15.1355 14.4757C15.1629 14.537 15.1776 14.6032 15.1787 14.6704C15.1799 14.7375 15.1676 14.8042 15.1424 14.8664C15.1173 14.9287 15.0798 14.9853 15.0324 15.0327C14.9849 15.0802 14.9283 15.1176 14.8661 15.1428C14.8038 15.1679 14.7371 15.1803 14.67 15.1791C14.6029 15.1779 14.5366 15.1632 14.4753 15.1359C14.414 15.1086 14.3588 15.0692 14.313 15.02L12.1317 12.8394C10.8922 13.9133 9.30634 14.5031 7.66634 14.5C3.89301 14.5 0.833008 11.44 0.833008 7.66671Z" fill="#686A7C"/>
+      </svg>
+      <input [(ngModel)]="search" type="text" placeholder="Поиск" />
+    </div>
+
+    <button type="button" class="filter-chip" [tuiDropdown]="roleMenu" [(tuiDropdownOpen)]="roleDropdownOpen">
+      <span>{{ roleChipLabel() }}</span>
+      @if (selectedRoles.length > 0) {
+        <span class="chip-count">{{ selectedRoles.length }}</span>
+      }
+      <tui-icon icon="@tui.chevron-down" />
+    </button>
+
+    <button type="button" class="filter-chip" [tuiDropdown]="stateMenu" [(tuiDropdownOpen)]="statusDropdownOpen">
+      <span>{{ statusChipLabel() }}</span>
+      @if (selectedStates.length > 0) {
+        <span class="chip-count">{{ selectedStates.length }}</span>
+      }
+      <tui-icon icon="@tui.chevron-down" />
+    </button>
+  </section>
+
+  <ng-template #roleMenu>
+    <div class="dropdown-card" (click)="$event.stopPropagation()">
+      <div class="dropdown-head">
+        <span>Все должности</span>
+        <button type="button" (click)="selectAllRoles()">Выбрать все</button>
+      </div>
+      <div class="dropdown-list">
+        @for (option of roleOptions; track option.value) {
+          <label class="dropdown-row">
+            <input type="checkbox" [checked]="isRoleSelected(option.value)" (change)="toggleRole(option.value)" />
+            <span>{{ option.label }}</span>
+          </label>
+        }
+      </div>
+      <div class="dropdown-head dropdown-head--bottom">
+        <button type="button" (click)="clearRoles()">Отменить выбор</button>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #stateMenu>
+    <div class="dropdown-card" (click)="$event.stopPropagation()">
+      <div class="dropdown-head">
+        <span>Все статусы</span>
+        <button type="button" (click)="selectAllStates()">Выбрать все</button>
+      </div>
+      <div class="dropdown-list">
+        @for (option of stateOptions; track option.value) {
+          <label class="dropdown-row">
+            <input type="checkbox" [checked]="isStateSelected(option.value)" (change)="toggleState(option.value)" />
+            <span>{{ option.label }}</span>
+          </label>
+        }
+      </div>
+      <div class="dropdown-head dropdown-head--bottom">
+        <button type="button" (click)="clearStates()">Отменить выбор</button>
+      </div>
+    </div>
+  </ng-template>
+
+  <section class="create-block">
+    <div class="create-toggle">
+      <span>Создание вакансии в кофейню</span>
+      <button type="button" class="toggle-btn" (click)="toggleCreateForm()">
+        <tui-icon [icon]="showCreateForm ? '@tui.minus' : '@tui.plus'" />
+      </button>
+    </div>
+
+    <form *ngIf="showCreateForm" class="create-form">
+      <div class="form-row">
+        <span class="step-index">1</span>
+        <select [(ngModel)]="createModel.roleNeeded" name="roleNeeded" class="field">
+          <option value="barista">Бариста</option>
+          <option value="manager">Менеджер</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <span class="step-index">2</span>
+        <select [(ngModel)]="createModel.coffeeShop" name="coffeeShop" class="field">
+          <option [ngValue]="''">Кофейня</option>
+          <option *ngFor="let shop of coffeeShops" [ngValue]="shop._id">
+            {{ shop.name }} · {{ shop.address }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <span class="step-index">3</span>
+        <button
+          type="button"
+          class="field field-button"
+          [tuiDropdown]="calendarDropdown"
+          [(tuiDropdownOpen)]="calendarOpen"
+        >
+          {{ createDateText }}
+          <tui-icon icon="@tui.calendar" />
+        </button>
+        <ng-template #calendarDropdown>
+          <div class="calendar-dropdown">
+            <tui-calendar [value]="selectedDay" (dayClick)="selectCreateDate($event)" />
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="form-row">
+        <span class="step-index">4</span>
+        <input
+          [(ngModel)]="createModel.startTime"
+          name="startTime"
+          type="time"
+          class="field half"
+        />
+        <input
+          [(ngModel)]="createModel.endTime"
+          name="endTime"
+          type="time"
+          class="field half"
+        />
+      </div>
+
+      <div class="form-row">
+        <span class="step-index">5</span>
+        <input
+          [(ngModel)]="createModel.peopleNeeded"
+          name="peopleNeeded"
+          type="number"
+          min="1"
+          class="field"
+          placeholder="Количество человек"
+        />
+      </div>
+
+      <div class="form-row">
+        <span class="step-index">6</span>
+        <input
+          [(ngModel)]="createModel.contact"
+          name="contact"
+          type="text"
+          class="field"
+          placeholder="Контакт для связи"
+        />
+      </div>
+
+      <div class="create-actions">
+        <button type="button" class="btn btn-secondary" (click)="toggleCreateForm()">Отмена</button>
+        <button type="button" class="btn btn-primary" [disabled]="isSubmitting" (click)="createVacancy()">
+          {{ isSubmitting ? 'Сохранение...' : 'Сохранить' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <div *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Загрузка вакансий...</div>
+
+  <section class="cards" *ngIf="!isLoading">
+    <article
+      class="vacancy-card"
+      *ngFor="let vacancy of filteredVacancies"
+      [class.card-filled]="vacancy.state === 'filled'"
+      [class.card-cancelled]="vacancy.state === 'cancelled' || vacancy.state === 'deleted'"
+    >
+      <div class="vacancy-main">
+        <div class="left">
+          <h3>{{ roleLabel(vacancy.roleNeeded) }}</h3>
+          <p>{{ vacancy.coffeeShop.name }} · {{ vacancy.coffeeShop.address }}</p>
+          <p class="time">{{ formatDate(vacancy.date) }} · {{ vacancy.startTime }} - {{ vacancy.endTime }}</p>
+        </div>
+
+        <div class="right">
+          <button type="button" class="icon-btn" (click)="deleteVacancy(vacancy)">
+            <tui-icon icon="@tui.trash-2" />
+          </button>
+          <button
+            type="button"
+            class="status-btn"
+            [ngClass]="stateClass(vacancy.state)"
+            (click)="toggleCandidates(vacancy)"
+          >
+            {{ stateLabel(vacancy.state) }}
+          </button>
+        </div>
+      </div>
+
+      <div class="assigned-block" *ngIf="activeAssignments(vacancy).length > 0">
+        <div class="assigned-title">Есть кандидат, его контакт:</div>
+        <div class="assigned-item" *ngFor="let assignment of activeAssignments(vacancy)">
+          <span>
+            {{ assignment.user.fullName }}
+            ·
+            {{ assignment.user.coffeeShop?.name || 'Не указано' }}
+            ·
+            {{ assignment.contact || vacancy.contact || '-' }}
+          </span>
+          <button type="button" class="mini-link" (click)="removeAssignment(vacancy, assignment.id)">
+            Удалить
+          </button>
+        </div>
+      </div>
+
+      <div class="candidates-block" *ngIf="openedCandidatesVacancyId === vacancy._id">
+        <div class="search-row">
+          <input
+            [(ngModel)]="candidateQueryByVacancy[vacancy._id]"
+            [name]="'candidateSearch-' + vacancy._id"
+            type="text"
+            class="candidate-search"
+            placeholder="Введите ФИО кандидата"
+          />
+          <button type="button" class="btn btn-secondary" (click)="searchCandidates(vacancy)">
+            Найти
+          </button>
+        </div>
+
+        <div *ngIf="candidatesLoadingByVacancy[vacancy._id]" class="loading-inline">
+          Поиск кандидатов...
+        </div>
+
+        <div *ngIf="candidateErrorByVacancy[vacancy._id]" class="error-inline">
+          {{ candidateErrorByVacancy[vacancy._id] }}
+        </div>
+
+        <div class="candidate-list" *ngIf="candidatesByVacancy[vacancy._id]?.length">
+          <label class="candidate-item" *ngFor="let candidate of candidatesByVacancy[vacancy._id]">
+            <input
+              type="radio"
+              [name]="'candidate-' + vacancy._id"
+              [value]="candidate._id"
+              [(ngModel)]="selectedCandidateByVacancy[vacancy._id]"
+            />
+            <span>
+              {{ candidate.fullName }}
+              ·
+              {{ candidate.coffeeShop?.name || 'Кофейня не указана' }}
+            </span>
+          </label>
+        </div>
+
+        <div class="candidates-actions">
+          <button type="button" class="btn btn-primary" (click)="assignSelectedCandidate(vacancy)">
+            Выбрать кандидата
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <div class="empty" *ngIf="filteredVacancies.length === 0">
+      По текущим фильтрам вакансий не найдено
+    </div>
+  </section>
+</div>

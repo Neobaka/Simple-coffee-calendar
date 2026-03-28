@@ -252,6 +252,12 @@
   border-radius: 14px;
   overflow-x: auto;
   overflow-y: visible;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .medical-table {
